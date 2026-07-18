@@ -10,6 +10,7 @@ export const validate = (schema) => catchAsync(async (req, res, next) => {
     });
     next();
   } catch (error) {
-    throw new ApiError(400, error.errors.map(e => e.message).join(', '));
+    console.error('Validation error details:', error);
+    throw new ApiError(400, error.errors ? error.errors.map(e => e.message).join(', ') : error.message);
   }
 });

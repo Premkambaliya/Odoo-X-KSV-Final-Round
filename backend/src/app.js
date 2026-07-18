@@ -17,23 +17,17 @@ import { notFound } from '../middlewares/notFound.middleware.js';
 import authRoute from '../modules/auth/index.js';
 import usersRoute from '../modules/users/index.js';
 import categoriesRoute from '../modules/categories/index.js';
-import rentalPeriodsRoute from '../modules/rentalPeriods/index.js';
 import vehiclesRoute from '../modules/vehicles/index.js';
 import vehicleImagesRoute from '../modules/vehicleImages/index.js';
-import priceListsRoute from '../modules/priceLists/index.js';
 import rentalOrdersRoute from '../modules/rentalOrders/index.js';
-import rentalItemsRoute from '../modules/rentalItems/index.js';
-import quotationsRoute from '../modules/quotations/index.js';
 import paymentsRoute from '../modules/payments/index.js';
 import securityDepositsRoute from '../modules/securityDeposits/index.js';
-import pickupsRoute from '../modules/pickups/index.js';
-import returnsRoute from '../modules/returns/index.js';
-import penaltiesRoute from '../modules/penalties/index.js';
 import dashboardRoute from '../modules/dashboard/index.js';
 import reportsRoute from '../modules/reports/index.js';
 import analyticsRoute from '../modules/analytics/index.js';
-import settingsRoute from '../modules/settings/index.js';
 import stripeRoute from '../modules/stripe/index.js';
+import invoicesRoute from '../modules/invoices/index.js';
+import userAddressesRoute from '../modules/userAddresses/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -76,13 +70,13 @@ app.use(express.json({ limit: '10kb' })); // Request size limits
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
 
-// Rate Limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per window
-  message: 'Too many requests from this IP, please try again later.'
-});
-app.use('/api', limiter);
+// Rate Limiting (Disabled for development as requested previously)
+// const limiter = rateLimit({
+//   windowMs: 15 * 60 * 1000,
+//   max: 100,
+//   message: 'Too many requests from this IP, please try again later.'
+// });
+// app.use('/api', limiter);
 
 // Swagger Documentation Setup
 const swaggerDocument = JSON.parse(fs.readFileSync(path.join(__dirname, '../swagger.json'), 'utf8'));
@@ -97,23 +91,17 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoute);
 app.use('/api/users', usersRoute);
 app.use('/api/categories', categoriesRoute);
-app.use('/api/rental-periods', rentalPeriodsRoute);
 app.use('/api/vehicles', vehiclesRoute);
-app.use('/api', vehicleImagesRoute); 
-app.use('/api/price-lists', priceListsRoute);
+app.use('/api', vehicleImagesRoute); // Mounts under /vehicles and /vehicle-images natively
 app.use('/api/rental-orders', rentalOrdersRoute);
-app.use('/api', rentalItemsRoute);
-app.use('/api', quotationsRoute);
 app.use('/api/payments', paymentsRoute);
 app.use('/api/security-deposits', securityDepositsRoute);
-app.use('/api/pickups', pickupsRoute);
-app.use('/api/returns', returnsRoute);
-app.use('/api/penalties', penaltiesRoute);
 app.use('/api/dashboard', dashboardRoute);
 app.use('/api/reports', reportsRoute);
 app.use('/api/analytics', analyticsRoute);
-app.use('/api/settings', settingsRoute);
 app.use('/api/stripe', stripeRoute);
+app.use('/api/invoices', invoicesRoute);
+app.use('/api/user-addresses', userAddressesRoute);
 
 // Error Handling
 app.use(notFound);

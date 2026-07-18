@@ -12,9 +12,27 @@ const router = express.Router();
 router.get('/vehicles/:vehicleId/images', vImageController.getImages);
 
 // Admin routes
-router.use(verifyToken, authorize('ADMIN'));
-router.post('/vehicles/:vehicleId/images', upload.single('image'), validate(uploadImageSchema), vImageController.upload);
-router.patch('/vehicle-images/:id/primary', vImageController.setPrimary);
-router.delete('/vehicle-images/:id', vImageController.delete);
+router.post(
+  '/vehicles/:vehicleId/images',
+  verifyToken,
+  authorize('ADMIN'),
+  upload.single('image'),
+  validate(uploadImageSchema),
+  vImageController.upload
+);
+
+router.patch(
+  '/vehicle-images/:id/primary',
+  verifyToken,
+  authorize('ADMIN'),
+  vImageController.setPrimary
+);
+
+router.delete(
+  '/vehicle-images/:id',
+  verifyToken,
+  authorize('ADMIN'),
+  vImageController.delete
+);
 
 export default router;

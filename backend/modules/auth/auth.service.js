@@ -15,7 +15,7 @@ class AuthService {
       ...data,
       password: hashedPassword,
       role: 'CUSTOMER',
-      status: 'ACTIVE'
+      accountStatus: 'Active'
     });
 
     const { password, ...userWithoutPassword } = user;
@@ -33,7 +33,7 @@ class AuthService {
       throw new ApiError(401, 'Invalid email or password');
     }
 
-    if (user.status !== 'ACTIVE') {
+    if (user.accountStatus !== 'Active') {
       throw new ApiError(401, 'User account is not active');
     }
 

@@ -22,7 +22,7 @@ export const verifyToken = catchAsync(async (req, res, next) => {
     if (!user) {
       throw new ApiError(401, 'User no longer exists');
     }
-    if (user.status !== 'ACTIVE') {
+    if (user.accountStatus !== 'Active') {
       throw new ApiError(401, 'User account is not active');
     }
 
