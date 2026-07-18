@@ -18,17 +18,21 @@ class QuotationService {
     return prisma.$transaction(async (tx) => {
       const quotation = await tx.quotation.create({
         data: {
-          rentalOrderId: orderId,
           quotationNumber: quotationNumber,
-          generatedDate: new Date(),
-          validUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Valid for 7 days
+          customerId: order.customerId,
+          expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           subtotal: order.subtotal,
           tax: order.tax,
           discount: order.discount,
           grandTotal: order.grandTotal,
-          terms: settings.quotationFooter
+          status: 'ISSUED',
+          notes: JSON.stringify({
+            rentalOrderId: orderId,
+            bookingNumber: order.bookingNumber,
+            terms: settings.quotationFooter || null,
+          }),
         },
-        include: { rentalOrder: true }
+        include: { customer: true },
       });
 
       return {
@@ -48,14 +52,15 @@ class QuotationService {
           brand: item.vehicle.brand,
           model: item.vehicle.model,
           registration: item.vehicle.registrationNumber,
-          rentalAmount: item.rentalAmount
+          rentalAmount: item.subtotal ?? item.unitPrice,
         })),
         pricing: {
           subtotal: order.subtotal,
           tax: order.tax,
           discount: order.discount,
           grandTotal: order.grandTotal
-        }
+        },
+        order,
       };
     });
   }

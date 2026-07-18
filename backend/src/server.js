@@ -6,7 +6,13 @@ process.on('uncaughtException', (err) => {
 });
 
 import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Always load backend/.env and override any shell/local defaults
+dotenv.config({ path: path.resolve(__dirname, '../.env'), override: true });
+
 import app from './app.js';
 import prisma from '../config/db.js';
 

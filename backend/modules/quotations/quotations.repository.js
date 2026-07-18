@@ -4,24 +4,42 @@ class QuotationRepository {
   async getOrder(orderId) {
     return prisma.rentalOrder.findUnique({
       where: { id: orderId },
-      include: { 
-        customer: true, 
-        rentalPeriod: true, 
-        rentalItems: { include: { vehicle: true } }
-      }
+      include: {
+        customer: true,
+        rentalPeriod: true,
+        rentalItems: { include: { vehicle: true } },
+      },
     });
   }
 
   async create(data) {
-    return prisma.quotation.create({ data, include: { rentalOrder: true } });
+    return prisma.quotation.create({ data, include: { customer: true } });
   }
 
   async findById(id) {
-    return prisma.quotation.findUnique({ where: { id }, include: { rentalOrder: { include: { customer: true, rentalItems: { include: { vehicle: true } } } } } });
+    return prisma.quotation.findUnique({
+      where: { id },
+      include: { customer: true },
+    });
   }
 
   async findByOrderId(rentalOrderId) {
-    return prisma.quotation.findUnique({ where: { rentalOrderId }, include: { rentalOrder: { include: { customer: true, rentalItems: { include: { vehicle: true } } } } } });
+    const quotations = await prisma.quotation.findMany({
+      include: { customer: true },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+
+    return (
+      quotations.find((q) => {
+        try {
+          const notes = q.notes ? JSON.parse(q.notes) : null;
+          return notes?.rentalOrderId === rentalOrderId;
+        } catch {
+          return false;
+        }
+      }) || null
+    );
   }
 
   async getCompanySettings() {

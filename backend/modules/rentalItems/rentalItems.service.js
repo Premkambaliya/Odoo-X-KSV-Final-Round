@@ -22,26 +22,29 @@ class RentalItemService {
 
     const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId } });
     const rentalPeriodDays = order.rentalPeriod.days;
-    const rentalAmount = Number(vehicle.basePrice) * rentalPeriodDays;
+    const unitPrice = Number(vehicle.basePrice) * rentalPeriodDays;
+    const quantity = 1;
+    const subtotal = unitPrice * quantity;
     
     return prisma.$transaction(async (tx) => {
       const item = await tx.rentalItem.create({
         data: {
           rentalOrderId: orderId,
           vehicleId: vehicleId,
-          quantity: 1,
-          rentalAmount: rentalAmount
+          quantity,
+          unitPrice,
+          subtotal,
         }
       });
 
       // Recalculate Order Totals
       const allItems = await tx.rentalItem.findMany({ where: { rentalOrderId: orderId } });
-      const subtotal = allItems.reduce((acc, curr) => acc + Number(curr.rentalAmount), 0);
-      const grandTotal = subtotal + Number(order.tax) - Number(order.discount);
+      const orderSubtotal = allItems.reduce((acc, curr) => acc + Number(curr.subtotal), 0);
+      const grandTotal = orderSubtotal + Number(order.tax) - Number(order.discount);
 
       await tx.rentalOrder.update({
         where: { id: orderId },
-        data: { subtotal, grandTotal }
+        data: { subtotal: orderSubtotal, grandTotal }
       });
 
       return item;
@@ -66,12 +69,12 @@ class RentalItemService {
 
       // Recalculate Order Totals
       const allItems = await tx.rentalItem.findMany({ where: { rentalOrderId: item.rentalOrderId } });
-      const subtotal = allItems.reduce((acc, curr) => acc + Number(curr.rentalAmount), 0);
-      const grandTotal = subtotal + Number(item.rentalOrder.tax) - Number(item.rentalOrder.discount);
+      const orderSubtotal = allItems.reduce((acc, curr) => acc + Number(curr.subtotal), 0);
+      const grandTotal = orderSubtotal + Number(item.rentalOrder.tax) - Number(item.rentalOrder.discount);
 
       await tx.rentalOrder.update({
         where: { id: item.rentalOrderId },
-        data: { subtotal, grandTotal }
+        data: { subtotal: orderSubtotal, grandTotal }
       });
 
       return true;

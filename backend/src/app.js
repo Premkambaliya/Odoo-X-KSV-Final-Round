@@ -52,7 +52,25 @@ app.use((req, res, next) => {
 // Production Hardening Middleware
 app.use(helmet());
 app.use(compression());
-app.use(cors({ origin: '*', credentials: true }));
+
+// Browsers reject Access-Control-Allow-Origin: * when credentials are included.
+const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:3000')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Not allowed by CORS: ${origin}`));
+      }
+    },
+    credentials: true,
+  })
+);
 app.use(morgan('dev'));
 app.use(express.json({ limit: '10kb' })); // Request size limits
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
