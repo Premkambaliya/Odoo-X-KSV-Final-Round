@@ -6,41 +6,31 @@ import { useParams, useRouter } from 'next/navigation';
 import {
   Ban,
   CheckCircle2,
-  CreditCard,
-  FileText,
-  PackageCheck,
-  PackageOpen,
-  AlertTriangle,
-  Pencil,
   Play,
   Printer,
-  RefreshCw,
-  Shield,
   Trash2,
+  Key,
+  ShieldAlert,
+  FileCheck
 } from 'lucide-react';
 import MasterPage from '@/components/master/MasterPage';
 import StatusBadge from '@/components/dashboard/StatusBadge';
-import RentalItemsList from '@/components/rental/RentalItemsList';
-import PricingCard from '@/components/rental/PricingCard';
-import OperationsTimeline from '@/components/operations/OperationsTimeline';
 import InfoCard, { InfoRow } from '@/components/rental/InfoCard';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
+import Select from '@/components/ui/Select';
+import Textarea from '@/components/ui/Textarea';
 import PageLoader from '@/components/common/PageLoader';
 import ErrorState from '@/components/dashboard/ErrorState';
 import SectionHeader from '@/components/dashboard/SectionHeader';
 import rentalService from '@/services/rentalService';
-import quotationService from '@/services/quotationService';
-import pickupService from '@/services/pickupService';
-import returnService from '@/services/returnService';
-import penaltyService from '@/services/penaltyService';
 import { APP_ROUTES } from '@/constants/routes';
-import { itemLineTotal, computeGrandTotal } from '@/lib/rental';
 import {
   customerName,
   formatCurrency,
   formatDate,
-  formatDateTime,
+  formatDateTime
 } from '@/lib/format';
 import { getErrorMessage } from '@/lib/apiResponse';
 import notify from '@/lib/toast';
@@ -49,44 +39,24 @@ export default function RentalOrderDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const [order, setOrder] = useState(null);
-  const [pickup, setPickup] = useState(null);
-  const [returnRecord, setReturnRecord] = useState(null);
-  const [penalties, setPenalties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState(null);
+
+  // Verification & Return form states
+  const [otpInput, setOtpInput] = useState('');
+  const [returnCondition, setReturnCondition] = useState('Good');
+  const [penaltyAmount, setPenaltyAmount] = useState('0');
+  const [penaltyReason, setPenaltyReason] = useState('');
+  const [returnRemarks, setReturnRemarks] = useState('Returned and inspected safely.');
 
   const load = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
       const result = await rentalService.getRentalOrderById(id);
-      const orderData = result.data;
-      setOrder(orderData);
-
-      if (orderData?.bookingNumber) {
-        const [pickupResult, returnResult, penaltyResult] = await Promise.all([
-          pickupService.getPickups({
-            orderNumber: orderData.bookingNumber,
-            limit: 1,
-            page: 1,
-          }),
-          returnService.getReturns({
-            orderNumber: orderData.bookingNumber,
-            limit: 1,
-            page: 1,
-          }),
-          penaltyService.getPenalties({
-            orderNumber: orderData.bookingNumber,
-            limit: 20,
-            page: 1,
-          }),
-        ]);
-        setPickup(pickupResult.data?.pickups?.[0] || null);
-        setReturnRecord(returnResult.data?.returns?.[0] || null);
-        setPenalties(penaltyResult.data?.penalties || []);
-      }
+      setOrder(result.data);
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -97,6 +67,43 @@ export default function RentalOrderDetailPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  async function handleVerifyPickup() {
+    if (!otpInput) {
+      notify.error('Please enter the 4-digit OTP');
+      return;
+    }
+    setBusy(true);
+    try {
+      await rentalService.pickup(id, otpInput);
+      notify.success('Vehicle pickup verified successfully!');
+      setOtpInput('');
+      load();
+    } catch (err) {
+      notify.error(getErrorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleCompleteReturn() {
+    setBusy(true);
+    try {
+      const payload = {
+        returnCondition,
+        returnRemarks,
+        penaltyAmount: Number(penaltyAmount) || 0,
+        penaltyReason: Number(penaltyAmount) > 0 ? penaltyReason : null
+      };
+      await rentalService.returnVehicle(id, payload);
+      notify.success('Vehicle return and inspection registered successfully!');
+      load();
+    } catch (err) {
+      notify.error(getErrorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function runStatus(status) {
     setBusy(true);
@@ -126,41 +133,6 @@ export default function RentalOrderDetailPage() {
     }
   }
 
-  async function handleRecalculate() {
-    setBusy(true);
-    try {
-      const result = await rentalService.recalculate(id);
-      notify.success(result.message || 'Totals recalculated');
-      setConfirm(null);
-      load();
-    } catch (err) {
-      notify.error(getErrorMessage(err));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleGenerateQuotation() {
-    setBusy(true);
-    try {
-      const result = await quotationService.generate(id);
-      notify.success(result.message || 'Quotation generated');
-      const qid = result.data?.quotation?.id;
-      if (qid) router.push(APP_ROUTES.ADMIN.QUOTATION_DETAIL(qid));
-      else router.push(APP_ROUTES.ADMIN.QUOTATION_BY_ORDER(id));
-    } catch (err) {
-      const message = getErrorMessage(err);
-      if (message.toLowerCase().includes('already')) {
-        notify.info('Quotation already exists — opening it');
-        router.push(APP_ROUTES.ADMIN.QUOTATION_BY_ORDER(id));
-      } else {
-        notify.error(message);
-      }
-    } finally {
-      setBusy(false);
-    }
-  }
-
   if (loading) {
     return (
       <MasterPage title="Rental Details" backHref={APP_ROUTES.ADMIN.RENTAL_ORDERS}>
@@ -179,155 +151,52 @@ export default function RentalOrderDetailPage() {
     );
   }
 
-  const items = order.rentalItems || [];
-  const displayDeposit =
-    Number(order.securityDeposit || 0) ||
-    items.reduce(
-      (sum, item) => sum + Number(item.vehicle?.securityDeposit || 0),
-      0
-    );
-  const displayGrandTotal = computeGrandTotal({
-    subtotal: order.subtotal,
-    tax: order.tax,
-    discount: order.discount,
-    securityDeposit: displayDeposit,
-    lateFee: order.lateFee,
-  });
-
   return (
     <MasterPage
-      title={order.bookingNumber}
-      description={`${customerName(order.customer)} · ${order.rentalPeriod?.name || 'Period'}`}
+      title={order.orderNumber}
+      description={`${customerName(order.customer)} · ${order.rentalDuration} ${order.rentalUnit}s`}
       backHref={APP_ROUTES.ADMIN.RENTAL_ORDERS}
       breadcrumbs={[
         { label: 'Admin', href: APP_ROUTES.ADMIN.ROOT },
         { label: 'Rental Orders', href: APP_ROUTES.ADMIN.RENTAL_ORDERS },
-        { label: order.bookingNumber },
+        { label: order.orderNumber },
       ]}
       actions={
         <>
-          {order.status === 'PENDING' ? (
+          {order.orderStatus === 'Pending' ? (
             <>
-              <Link href={APP_ROUTES.ADMIN.RENTAL_ORDER_EDIT(id)}>
-                <Button size="sm" variant="outline">
-                  <Pencil size={14} />
-                  Edit
-                </Button>
-              </Link>
               <Button
                 size="sm"
                 onClick={() => setConfirm({ type: 'confirm' })}
                 disabled={busy}
               >
                 <CheckCircle2 size={14} />
-                Confirm
+                Confirm Order
               </Button>
             </>
           ) : null}
-          {order.status === 'CONFIRMED' ? (
-            <Button
-              size="sm"
-              onClick={() => setConfirm({ type: 'active' })}
-              disabled={busy}
-            >
-              <Play size={14} />
-              Mark Active
-            </Button>
-          ) : null}
-          {order.status === 'ACTIVE' ? (
-            <Button
-              size="sm"
-              onClick={() => setConfirm({ type: 'complete' })}
-              disabled={busy}
-            >
-              <CheckCircle2 size={14} />
-              Complete
-            </Button>
-          ) : null}
-          <Button size="sm" variant="outline" onClick={handleGenerateQuotation} disabled={busy}>
-            <FileText size={14} />
-            Quotation
-          </Button>
-          {order.status !== 'CANCELLED' && order.paymentStatus !== 'PAID' ? (
-            <Link
-              href={`${APP_ROUTES.ADMIN.PAYMENT_NEW}?rentalOrderId=${order.id}`}
-            >
-              <Button size="sm" variant="outline">
-                <CreditCard size={14} />
-                Payment
-              </Button>
-            </Link>
-          ) : null}
-          {order.status !== 'CANCELLED' ? (
-            <Link
-              href={`${APP_ROUTES.ADMIN.SECURITY_DEPOSIT_NEW}?rentalOrderId=${order.id}`}
-            >
-              <Button size="sm" variant="outline">
-                <Shield size={14} />
-                Deposit
-              </Button>
-            </Link>
-          ) : null}
-          {order.status === 'CONFIRMED' && !pickup ? (
-            <Link
-              href={`${APP_ROUTES.ADMIN.PICKUP_NEW}?rentalOrderId=${order.id}`}
-            >
-              <Button size="sm" variant="outline">
-                <PackageCheck size={14} />
-                Pickup
-              </Button>
-            </Link>
-          ) : null}
-          {order.status === 'ACTIVE' && !returnRecord ? (
-            <Link
-              href={`${APP_ROUTES.ADMIN.RETURN_NEW}?rentalOrderId=${order.id}`}
-            >
-              <Button size="sm" variant="outline">
-                <PackageOpen size={14} />
-                Return
-              </Button>
-            </Link>
-          ) : null}
-          {order.status !== 'CANCELLED' ? (
-            <Link
-              href={`${APP_ROUTES.ADMIN.PENALTY_NEW}?rentalOrderId=${order.id}`}
-            >
-              <Button size="sm" variant="outline">
-                <AlertTriangle size={14} />
-                Penalty
-              </Button>
-            </Link>
-          ) : null}
-          {order.status !== 'CANCELLED' &&
-          order.status !== 'COMPLETED' &&
-          order.status !== 'LATE' ? (
+          {order.orderStatus !== 'Cancelled' &&
+          order.orderStatus !== 'Completed' ? (
             <Button
               size="sm"
               variant="outline"
               className="text-warning"
               onClick={() => setConfirm({ type: 'cancel' })}
+              disabled={busy}
             >
               <Ban size={14} />
-              Cancel
+              Cancel Order
             </Button>
           ) : null}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setConfirm({ type: 'recalculate' })}
-            disabled={busy}
-          >
-            <RefreshCw size={14} />
-            Recalculate
-          </Button>
-          {order.status === 'PENDING' || order.status === 'CANCELLED' ? (
+          {order.orderStatus === 'Pending' || order.orderStatus === 'Cancelled' ? (
             <Button
               size="sm"
               variant="danger"
               onClick={() => setConfirm({ type: 'delete' })}
+              disabled={busy}
             >
               <Trash2 size={14} />
-              Delete
+              Delete Order
             </Button>
           ) : null}
         </>
@@ -335,84 +204,213 @@ export default function RentalOrderDetailPage() {
     >
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="space-y-6">
+          {/* Main Booking Overview */}
           <InfoCard title="Booking Overview">
             <dl>
-              <InfoRow label="Status" value={<StatusBadge status={order.status} />} />
+              <InfoRow label="Order Status" value={<StatusBadge status={order.orderStatus} />} />
               <InfoRow
-                label="Rental payment status"
-                value={<StatusBadge status={order.paymentStatus} />}
+                label="Rental Payment status"
+                value={<StatusBadge status={order.payment?.paymentStatus || 'Pending'} />}
               />
               <InfoRow label="Customer" value={customerName(order.customer)} />
               <InfoRow label="Email" value={order.customer?.email} />
-              <InfoRow label="Phone" value={order.customer?.phone} />
-              <InfoRow label="Period" value={order.rentalPeriod?.name} />
-              <InfoRow label="Duration" value={`${order.rentalPeriod?.days || '—'} days`} />
-              <InfoRow label="Pickup" value={formatDateTime(order.pickupDate)} />
-              <InfoRow label="Expected return" value={formatDateTime(order.expectedReturnDate)} />
-              <InfoRow label="Actual return" value={formatDateTime(order.actualReturnDate)} />
-              <InfoRow label="Created" value={formatDateTime(order.createdAt)} />
+              <InfoRow label="Phone" value={order.customer?.phone || '—'} />
+              <InfoRow label="Rental Unit" value={order.rentalUnit} />
+              <InfoRow label="Duration" value={`${order.rentalDuration} ${order.rentalUnit}s`} />
+              <InfoRow label="Pickup Schedule" value={formatDateTime(order.pickupDate)} />
+              <InfoRow label="Expected Return" value={formatDateTime(order.expectedReturnDate)} />
+              <InfoRow label="Actual Return" value={order.actualReturnDate ? formatDateTime(order.actualReturnDate) : '—'} />
+              <InfoRow label="Delivery Location" value={order.pickupType === 'Home_Delivery' && order.deliveryAddress ? `${order.deliveryAddress.addressLine1}, ${order.deliveryAddress.city}` : 'Store Pickup'} />
+              <InfoRow label="Created At" value={formatDateTime(order.createdAt)} />
             </dl>
           </InfoCard>
 
+          {/* Rented Vehicle Card */}
           <div className="surface-card p-5 sm:p-6">
-            <SectionHeader title="Rental Items" description="Vehicles attached to this booking" />
-            <RentalItemsList items={items} />
+            <SectionHeader title="Rented Vehicle" description="Vehicle allocated for this booking" />
+            {order.vehicle ? (
+              <div className="flex gap-4 items-center mt-4">
+                {order.vehicle.thumbnail || order.vehicle.images?.[0]?.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={order.vehicle.thumbnail || order.vehicle.images?.[0]?.imageUrl}
+                    alt={`${order.vehicle.brand} ${order.vehicle.model}`}
+                    className="h-16 w-24 rounded-lg object-cover bg-slate-100"
+                  />
+                ) : (
+                  <div className="flex h-16 w-24 items-center justify-center rounded-lg bg-slate-100 text-[10px] text-muted">
+                    No image
+                  </div>
+                )}
+                <div>
+                  <h4 className="font-semibold text-primary">{order.vehicle.brand} {order.vehicle.model}</h4>
+                  <p className="text-xs text-secondary mt-0.5">Reg No: {order.vehicle.registrationNumber} | Fuel: {order.vehicle.fuelType}</p>
+                  <p className="text-xs text-secondary">Hourly: {formatCurrency(order.vehicle.rentPerHour)} | Daily: {formatCurrency(order.vehicle.rentPerDay)}</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-secondary mt-3">No vehicle details linked.</p>
+            )}
           </div>
 
-          <InfoCard title="Notes & Locations">
+          {/* Pickup Verification Module */}
+          {order.orderStatus === 'Confirmed' && !order.pickupStatus ? (
+            <div className="surface-card p-5 sm:p-6 border-l-4 border-accent space-y-4">
+              <div className="flex gap-2 items-center text-accent">
+                <Key size={18} />
+                <h3 className="font-semibold text-primary text-base">OTP Verification & Pickup Handover</h3>
+              </div>
+              <p className="text-xs text-secondary leading-normal">
+                Ask the customer for the 4-digit verification code. Verifying OTP activates the lease and registers the handover.
+              </p>
+              <div className="flex gap-3 max-w-sm">
+                <Input
+                  placeholder="Enter 4-Digit OTP"
+                  type="text"
+                  maxLength={4}
+                  value={otpInput}
+                  onChange={(e) => setOtpInput(e.target.value)}
+                />
+                <Button onClick={handleVerifyPickup} loading={busy}>Verify & Handover</Button>
+              </div>
+              <p className="text-[11px] text-muted">
+                Demo OTP: <span className="font-mono bg-slate-100 px-1 py-0.5 rounded font-bold text-accent">{order.pickupOtp}</span>
+              </p>
+            </div>
+          ) : null}
+
+          {/* Return Inspection Form Module */}
+          {order.orderStatus === 'Active' && order.pickupStatus ? (
+            <div className="surface-card p-5 sm:p-6 border-l-4 border-emerald-500 space-y-4">
+              <div className="flex gap-2 items-center text-emerald-600">
+                <CheckCircle2 size={18} />
+                <h3 className="font-semibold text-primary text-base">Return Inspection & Closure</h3>
+              </div>
+              <p className="text-xs text-secondary">
+                Perform vehicle return inspection checks. Set the return condition and enter penalties if damages or delays occurred.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2 mt-2">
+                <Select
+                  label="Condition"
+                  value={returnCondition}
+                  onChange={(e) => setReturnCondition(e.target.value)}
+                  options={[
+                    { value: 'Good', label: 'Good (No damage)' },
+                    { value: 'Damaged', label: 'Damaged (Penalty applies)' }
+                  ]}
+                />
+                <Input
+                  label="Penalty Fee (INR)"
+                  type="number"
+                  value={penaltyAmount}
+                  onChange={(e) => setPenaltyAmount(e.target.value)}
+                />
+                <Input
+                  label="Penalty Reason"
+                  placeholder="e.g., Scratched door panel, delayed return"
+                  className="sm:col-span-2"
+                  value={penaltyReason}
+                  onChange={(e) => setPenaltyReason(e.target.value)}
+                />
+                <Textarea
+                  label="Inspection Remarks"
+                  className="sm:col-span-2"
+                  value={returnRemarks}
+                  onChange={(e) => setReturnRemarks(e.target.value)}
+                />
+              </div>
+              <div className="flex justify-end pt-2">
+                <Button onClick={handleCompleteReturn} loading={busy}>Finalize Return & Generate Invoice</Button>
+              </div>
+            </div>
+          ) : null}
+
+          {/* Invoice Receipt Receipt */}
+          {order.invoice ? (
+            <InfoCard title="Invoice Receipt">
+              <div className="flex gap-2 items-center text-emerald-600 mb-3">
+                <FileCheck size={18} />
+                <span className="text-sm font-semibold text-primary">Generated Invoice: {order.invoice.invoiceNumber}</span>
+              </div>
+              <dl>
+                <InfoRow label="Base Rent" value={formatCurrency(order.invoice.rentalAmount)} />
+                <InfoRow label="Tax Amount (18%)" value={formatCurrency(order.invoice.taxAmount)} />
+                <InfoRow label="Security Deposit" value={formatCurrency(order.invoice.depositAmount)} />
+                <InfoRow label="Penalty / Late Fees" value={formatCurrency(order.invoice.penaltyAmount)} />
+                <InfoRow label="Invoice Status" value={<StatusBadge status={order.invoice.invoiceStatus} />} />
+                <div className="border-t border-border mt-3 pt-3 flex justify-between items-center">
+                  <span className="text-sm font-bold text-primary">Final Total Charged</span>
+                  <span className="text-base font-bold text-accent">{formatCurrency(order.invoice.totalAmount)}</span>
+                </div>
+              </dl>
+            </InfoCard>
+          ) : null}
+
+          {/* Remarks Notes */}
+          <InfoCard title="Remarks & Rental Notes">
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-secondary">
               {order.remarks || 'No remarks provided.'}
             </p>
           </InfoCard>
-
-          <InfoCard title="Pickup & Return">
-            <p className="text-sm text-muted">
-              Dedicated pickup/return modules arrive in a later phase. Current booking
-              stores schedule and notes above.
-            </p>
-            <dl className="mt-3">
-              <InfoRow label="Pickup date" value={formatDate(order.pickupDate)} />
-              <InfoRow label="Return date" value={formatDate(order.expectedReturnDate)} />
-            </dl>
-          </InfoCard>
         </div>
 
         <div className="space-y-6">
-          <PricingCard
-            subtotal={order.subtotal}
-            tax={order.tax}
-            discount={order.discount}
-            deposit={displayDeposit}
-            lateFee={order.lateFee}
-            grandTotal={displayGrandTotal}
-          />
-          <OperationsTimeline
-            order={order}
-            pickup={pickup}
-            returnRecord={returnRecord}
-            penalties={penalties}
-            hasPayment={order.paymentStatus !== 'PENDING'}
-          />
-          <InfoCard title="Activity">
-            <ul className="space-y-3 text-sm">
-              <li className="text-secondary">
-                Order created · {formatDateTime(order.createdAt)}
-              </li>
-              <li className="text-secondary">
-                Current status · <StatusBadge status={order.status} />
-              </li>
-              <li className="text-secondary">
-                Items total · {formatCurrency(items.reduce((s, i) => s + itemLineTotal(i), 0))}
-              </li>
-            </ul>
+          {/* Pricing Breakdown Card */}
+          <InfoCard title="Lease Pricing Details">
+            <dl className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-secondary">Base Rental Cost</span>
+                <span className="font-medium text-primary tabular-nums">{formatCurrency(order.rentalAmount)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-secondary">GST / Taxes (18%)</span>
+                <span className="font-medium text-primary tabular-nums">{formatCurrency(Number(order.rentalAmount) * 0.18)}</span>
+              </div>
+              <div className="flex justify-between text-sm border-b border-border pb-2">
+                <span className="text-secondary">Refundable Security Deposit</span>
+                <span className="font-medium text-primary tabular-nums">{formatCurrency(order.securityDeposit?.depositAmount || 0)}</span>
+              </div>
+              <div className="flex justify-between text-sm font-bold pt-1">
+                <span className="text-primary">Estimated Grand Total</span>
+                <span className="text-accent tabular-nums">{formatCurrency(Number(order.rentalAmount) * 1.18 + Number(order.securityDeposit?.depositAmount || 0))}</span>
+              </div>
+            </dl>
+          </InfoCard>
+
+          {/* Security Deposit Details Card */}
+          {order.securityDeposit ? (
+            <InfoCard title="Security Deposit Refund status">
+              <dl className="space-y-2">
+                <InfoRow label="Deposit Status" value={<span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${order.securityDeposit.depositStatus === 'Held' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>{order.securityDeposit.depositStatus}</span>} />
+                <InfoRow label="Collected Amount" value={formatCurrency(order.securityDeposit.depositAmount)} />
+                <InfoRow label="Penalty Deducted" value={formatCurrency(order.securityDeposit.penaltyAmount || 0)} />
+                {order.securityDeposit.penaltyReason && (
+                  <div className="text-xs text-rose-600 bg-rose-50 p-2 rounded border border-rose-100 leading-normal">
+                    Reason: {order.securityDeposit.penaltyReason}
+                  </div>
+                )}
+                <InfoRow label="Refunded Amount" value={formatCurrency(order.securityDeposit.refundAmount || 0)} />
+                <InfoRow label="Refund Status" value={<StatusBadge status={order.securityDeposit.refundStatus} />} />
+                {order.securityDeposit.refundDate && (
+                  <InfoRow label="Refund Date" value={formatDateTime(order.securityDeposit.refundDate)} />
+                )}
+              </dl>
+            </InfoCard>
+          ) : null}
+
+          {/* Print Options */}
+          <InfoCard title="Print Summary">
+            <p className="text-xs text-secondary leading-relaxed">
+              Export and download a summary statement of this rental order.
+            </p>
             <Button
               variant="outline"
               size="sm"
-              className="mt-4"
+              className="mt-3 w-full"
               onClick={() => window.print()}
             >
               <Printer size={14} />
-              Print summary
+              Print Invoice Summary
             </Button>
           </InfoCard>
         </div>
@@ -424,35 +422,22 @@ export default function RentalOrderDetailPage() {
         loading={busy}
         title={
           confirm?.type === 'confirm'
-            ? 'Confirm rental?'
-            : confirm?.type === 'active'
-              ? 'Mark as active?'
-              : confirm?.type === 'complete'
-                ? 'Complete rental?'
-                : confirm?.type === 'cancel'
-                  ? 'Cancel rental?'
-                  : confirm?.type === 'recalculate'
-                    ? 'Recalculate totals?'
-                    : 'Delete rental?'
+            ? 'Confirm rental booking?'
+            : confirm?.type === 'cancel'
+              ? 'Cancel rental booking?'
+              : 'Delete rental booking?'
         }
         description={
           confirm?.type === 'confirm'
-            ? 'Vehicles will be marked BOOKED.'
+            ? 'Vehicle availability status will change to Reserved.'
             : confirm?.type === 'cancel'
-              ? 'Vehicles will be released back to AVAILABLE.'
-              : confirm?.type === 'delete'
-                ? 'This permanently removes the booking.'
-                : confirm?.type === 'recalculate'
-                  ? 'Rebuilds subtotal, security deposit, and grand total from rental items, then syncs payment status.'
-                  : 'Update the rental lifecycle status.'
+              ? 'Vehicle availability status will be released back to Available.'
+              : 'This permanently removes the booking from records.'
         }
         confirmLabel="Confirm"
         onConfirm={() => {
-          if (confirm?.type === 'confirm') return runStatus('CONFIRMED');
-          if (confirm?.type === 'active') return runStatus('ACTIVE');
-          if (confirm?.type === 'complete') return runStatus('COMPLETED');
-          if (confirm?.type === 'cancel') return runStatus('CANCELLED');
-          if (confirm?.type === 'recalculate') return handleRecalculate();
+          if (confirm?.type === 'confirm') return runStatus('Confirmed');
+          if (confirm?.type === 'cancel') return runStatus('Cancelled');
           return handleDelete();
         }}
       />

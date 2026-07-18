@@ -1,15 +1,8 @@
 import { z } from 'zod';
-import { VEHICLE_AVAILABILITY } from '@/constants/masterData';
 
 export const categorySchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  description: z.string().optional().or(z.literal('')),
-  status: z.boolean().optional(),
-});
-
-export const rentalPeriodSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  days: z.coerce.number().int().positive('Days must be greater than 0'),
+  categoryName: z.string().min(1, 'Category Name is required'),
+  vehicleType: z.enum(['Two_Wheeler', 'Four_Wheeler']),
   description: z.string().optional().or(z.literal('')),
   status: z.boolean().optional(),
 });
@@ -28,29 +21,13 @@ export const vehicleSchema = z.object({
   seatCapacity: z.coerce.number().int().positive('Seat capacity must be positive'),
   mileage: z.coerce.number().nonnegative('Mileage cannot be negative'),
   description: z.string().optional().or(z.literal('')),
-  basePrice: z.coerce.number().positive('Base price must be positive'),
+  rentPerHour: z.coerce.number().positive('Hourly rate must be positive'),
+  rentPerDay: z.coerce.number().positive('Daily rate must be positive'),
+  rentPerWeek: z.coerce.number().positive('Weekly rate must be positive'),
+  rentPerMonth: z.coerce.number().positive('Monthly rate must be positive'),
   securityDeposit: z.coerce.number().nonnegative('Security deposit cannot be negative'),
-  availabilityStatus: z.enum([
-    VEHICLE_AVAILABILITY.AVAILABLE,
-    VEHICLE_AVAILABILITY.BOOKED,
-    VEHICLE_AVAILABILITY.UNDER_MAINTENANCE,
-    VEHICLE_AVAILABILITY.OUT_OF_SERVICE,
-  ]),
+  engineCapacity: z.string().min(1, 'Engine capacity is required'),
+  currentOdometer: z.coerce.number().nonnegative('Current odometer is required'),
+  status: z.enum(['Available', 'Reserved', 'Rented', 'Maintenance']),
   currentStatus: z.string().optional().or(z.literal('')),
 });
-
-export const priceListSchema = z
-  .object({
-    vehicleId: z.string().uuid('Select a vehicle'),
-    pricingType: z.string().min(1, 'Pricing type is required'),
-    price: z.coerce.number().positive('Price must be positive'),
-    validFrom: z.string().optional().or(z.literal('')),
-    validTo: z.string().optional().or(z.literal('')),
-  })
-  .refine(
-    (data) => {
-      if (!data.validFrom || !data.validTo) return true;
-      return new Date(data.validFrom) <= new Date(data.validTo);
-    },
-    { message: 'validFrom must be before or equal to validTo', path: ['validTo'] }
-  );

@@ -17,7 +17,8 @@ export default function CreateCategoryPage() {
     setLoading(true);
     try {
       const payload = {
-        name: values.name,
+        categoryName: values.categoryName,
+        vehicleType: values.vehicleType,
         description: values.description || undefined,
         status: values.status,
       };

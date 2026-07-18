@@ -141,10 +141,10 @@ export default function VehiclesPage() {
     {
       key: 'category',
       header: 'Category',
-      render: (_, row) => row.category?.name || '—',
+      render: (_, row) => row.category?.categoryName || '—',
     },
     {
-      key: 'availabilityStatus',
+      key: 'status',
       header: 'Availability',
       render: (v) => <StatusBadge status={v} />,
     },
@@ -157,8 +157,8 @@ export default function VehiclesPage() {
       header: 'Fuel',
     },
     {
-      key: 'basePrice',
-      header: 'Base Price',
+      key: 'rentPerDay',
+      header: 'Daily Price',
       sortable: true,
       render: (v) => (
         <span className="font-medium tabular-nums">{formatCurrency(v)}</span>
@@ -243,7 +243,7 @@ export default function VehiclesPage() {
               key: 'category',
               label: 'Category',
               type: 'select',
-              options: categories.map((c) => ({ value: c.id, label: c.name })),
+              options: categories.map((c) => ({ value: c.id, label: c.categoryName })),
             },
             {
               key: 'availability',

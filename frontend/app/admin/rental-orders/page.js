@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Eye, Pencil, Ban, Trash2 } from 'lucide-react';
+import { Eye, Ban, Trash2 } from 'lucide-react';
 import MasterPage from '@/components/master/MasterPage';
 import DataTable from '@/components/tables/DataTable';
 import FilterPanel from '@/components/forms/FilterPanel';
@@ -52,7 +52,13 @@ export default function RentalOrdersPage() {
         order: sortOrder,
       };
       Object.entries(filters).forEach(([key, value]) => {
-        if (value) params[key] = value;
+        if (value) {
+          if (key === 'status') {
+            params.orderStatus = value;
+          } else {
+            params[key] = value;
+          }
+        }
       });
       const result = await rentalService.getRentalOrders(params);
       setOrders(result.data?.orders || []);
@@ -73,7 +79,7 @@ export default function RentalOrdersPage() {
     setActionBusy(true);
     try {
       if (actionTarget.type === 'cancel') {
-        await rentalService.updateStatus(actionTarget.order.id, 'CANCELLED');
+        await rentalService.updateStatus(actionTarget.order.id, 'Cancelled');
         notify.success('Rental cancelled');
       } else if (actionTarget.type === 'delete') {
         await rentalService.remove(actionTarget.order.id);
@@ -90,7 +96,7 @@ export default function RentalOrdersPage() {
 
   const columns = [
     {
-      key: 'bookingNumber',
+      key: 'orderNumber',
       header: 'Booking',
       sortable: true,
       render: (v, row) => (
@@ -106,7 +112,7 @@ export default function RentalOrdersPage() {
       render: (_, row) => customerName(row.customer),
     },
     {
-      key: 'status',
+      key: 'orderStatus',
       header: 'Status',
       render: (v) => <StatusBadge status={v} />,
     },
@@ -122,11 +128,11 @@ export default function RentalOrdersPage() {
       render: (v) => formatDate(v),
     },
     {
-      key: 'grandTotal',
+      key: 'rentalAmount',
       header: 'Total',
       sortable: true,
-      render: (v) => (
-        <span className="font-medium tabular-nums">{formatCurrency(v)}</span>
+      render: (v, row) => (
+        <span className="font-medium tabular-nums">{formatCurrency(row.payment?.totalAmount || v)}</span>
       ),
     },
     {
@@ -139,16 +145,8 @@ export default function RentalOrdersPage() {
               <Eye size={14} />
             </Button>
           </Link>
-          {row.status === 'PENDING' ? (
-            <Link href={APP_ROUTES.ADMIN.RENTAL_ORDER_EDIT(row.id)}>
-              <Button variant="ghost" size="sm" aria-label="Edit">
-                <Pencil size={14} />
-              </Button>
-            </Link>
-          ) : null}
-          {row.status !== 'CANCELLED' &&
-          row.status !== 'COMPLETED' &&
-          row.status !== 'LATE' ? (
+          {row.orderStatus !== 'Cancelled' &&
+          row.orderStatus !== 'Completed' ? (
             <Button
               variant="ghost"
               size="sm"
@@ -159,7 +157,7 @@ export default function RentalOrdersPage() {
               <Ban size={14} />
             </Button>
           ) : null}
-          {row.status === 'PENDING' || row.status === 'CANCELLED' ? (
+          {row.orderStatus === 'Pending' || row.orderStatus === 'Cancelled' ? (
             <Button
               variant="ghost"
               size="sm"
@@ -253,8 +251,8 @@ export default function RentalOrdersPage() {
         }
         description={
           actionTarget?.type === 'cancel'
-            ? `Cancel ${actionTarget.order.bookingNumber}? Reserved vehicles will be released.`
-            : `Permanently delete ${actionTarget?.order?.bookingNumber}?`
+            ? `Cancel ${actionTarget.order.orderNumber}? Reserved vehicles will be released.`
+            : `Permanently delete ${actionTarget?.order?.orderNumber}?`
         }
         confirmLabel={actionTarget?.type === 'cancel' ? 'Cancel Rental' : 'Delete'}
         tone="danger"

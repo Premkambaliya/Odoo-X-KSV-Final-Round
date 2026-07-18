@@ -11,7 +11,6 @@ import {
   AVAILABILITY_OPTIONS,
   FUEL_OPTIONS,
   TRANSMISSION_OPTIONS,
-  VEHICLE_AVAILABILITY,
 } from '@/constants/masterData';
 
 export default function VehicleForm({
@@ -41,9 +40,14 @@ export default function VehicleForm({
       seatCapacity: 5,
       mileage: 0,
       description: '',
-      basePrice: '',
+      rentPerHour: '',
+      rentPerDay: '',
+      rentPerWeek: '',
+      rentPerMonth: '',
       securityDeposit: '',
-      availabilityStatus: VEHICLE_AVAILABILITY.AVAILABLE,
+      engineCapacity: '',
+      currentOdometer: 0,
+      status: 'Available',
       currentStatus: '',
       ...defaultValues,
     },
@@ -51,7 +55,7 @@ export default function VehicleForm({
 
   const categoryOptions = categories.map((c) => ({
     value: c.id,
-    label: c.name,
+    label: c.categoryName,
   }));
 
   return (
@@ -69,11 +73,11 @@ export default function VehicleForm({
           {...register('categoryId')}
         />
         <Select
-          label="Availability"
+          label="Status"
           required
           options={AVAILABILITY_OPTIONS}
-          error={errors.availabilityStatus?.message}
-          {...register('availabilityStatus')}
+          error={errors.status?.message}
+          {...register('status')}
         />
         <Input
           label="Brand"
@@ -139,7 +143,7 @@ export default function VehicleForm({
           {...register('seatCapacity')}
         />
         <Input
-          label="Mileage"
+          label="Mileage (km/l)"
           type="number"
           step="0.1"
           required
@@ -147,12 +151,18 @@ export default function VehicleForm({
           {...register('mileage')}
         />
         <Input
-          label="Base Price"
-          type="number"
-          step="0.01"
+          label="Engine Capacity"
+          placeholder="e.g. 2400 cc"
           required
-          error={errors.basePrice?.message}
-          {...register('basePrice')}
+          error={errors.engineCapacity?.message}
+          {...register('engineCapacity')}
+        />
+        <Input
+          label="Current Odometer (km)"
+          type="number"
+          required
+          error={errors.currentOdometer?.message}
+          {...register('currentOdometer')}
         />
         <Input
           label="Security Deposit"
@@ -163,7 +173,39 @@ export default function VehicleForm({
           {...register('securityDeposit')}
         />
         <Input
-          label="Current Status"
+          label="Rent Per Hour"
+          type="number"
+          step="0.01"
+          required
+          error={errors.rentPerHour?.message}
+          {...register('rentPerHour')}
+        />
+        <Input
+          label="Rent Per Day"
+          type="number"
+          step="0.01"
+          required
+          error={errors.rentPerDay?.message}
+          {...register('rentPerDay')}
+        />
+        <Input
+          label="Rent Per Week"
+          type="number"
+          step="0.01"
+          required
+          error={errors.rentPerWeek?.message}
+          {...register('rentPerWeek')}
+        />
+        <Input
+          label="Rent Per Month"
+          type="number"
+          step="0.01"
+          required
+          error={errors.rentPerMonth?.message}
+          {...register('rentPerMonth')}
+        />
+        <Input
+          label="Current Status Notes"
           placeholder="Optional operational note"
           error={errors.currentStatus?.message}
           {...register('currentStatus')}

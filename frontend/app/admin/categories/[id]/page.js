@@ -74,13 +74,13 @@ export default function CategoryDetailPage() {
 
   return (
     <MasterPage
-      title={category.name}
+      title={category.categoryName}
       description="Category details and linked fleet count"
       backHref={APP_ROUTES.ADMIN.CATEGORIES}
       breadcrumbs={[
         { label: 'Admin', href: APP_ROUTES.ADMIN.ROOT },
         { label: 'Categories', href: APP_ROUTES.ADMIN.CATEGORIES },
-        { label: category.name },
+        { label: category.categoryName },
       ]}
       actions={
         <>
@@ -99,10 +99,18 @@ export default function CategoryDetailPage() {
     >
       <div className="grid gap-4 md:grid-cols-2">
         <div className="surface-card space-y-4 p-6">
-          <div>
-            <p className="text-xs font-medium tracking-wide text-muted uppercase">Status</p>
-            <div className="mt-2">
-              <StatusBadge active={Boolean(category.status)} />
+          <div className="grid gap-4 grid-cols-2">
+            <div>
+              <p className="text-xs font-medium tracking-wide text-muted uppercase">Status</p>
+              <div className="mt-2">
+                <StatusBadge active={Boolean(category.status)} />
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-medium tracking-wide text-muted uppercase">Vehicle Type</p>
+              <p className="mt-2 text-sm font-semibold text-primary">
+                {category.vehicleType === 'Four_Wheeler' ? 'Four Wheeler' : 'Two Wheeler'}
+              </p>
             </div>
           </div>
           <div>
@@ -133,7 +141,7 @@ export default function CategoryDetailPage() {
         onConfirm={handleDelete}
         loading={deleting}
         title="Delete category?"
-        description={`Delete “${category.name}”? This fails if vehicles are linked.`}
+        description={`Delete “${category.categoryName}”? This fails if vehicles are linked.`}
       />
     </MasterPage>
   );

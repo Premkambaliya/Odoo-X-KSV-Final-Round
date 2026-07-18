@@ -22,7 +22,7 @@ export default function CategoriesPage() {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [sortBy, setSortBy] = useState('name');
+  const [sortBy, setSortBy] = useState('categoryName');
   const [sortOrder, setSortOrder] = useState('asc');
   const [deleting, setDeleting] = useState(null);
   const [deletingBusy, setDeletingBusy] = useState(false);
@@ -48,7 +48,7 @@ export default function CategoriesPage() {
     () =>
       filterAndPaginate(items, {
         search,
-        searchKeys: ['name', 'description'],
+        searchKeys: ['categoryName', 'description'],
         page,
         limit: 10,
         sortBy,
@@ -78,10 +78,20 @@ export default function CategoriesPage() {
 
   const columns = [
     {
-      key: 'name',
-      header: 'Name',
+      key: 'categoryName',
+      header: 'Category Name',
       sortable: true,
       render: (value) => <span className="font-medium text-primary">{value}</span>,
+    },
+    {
+      key: 'vehicleType',
+      header: 'Vehicle Type',
+      sortable: true,
+      render: (value) => (
+        <span className="text-secondary">
+          {value === 'Four_Wheeler' ? 'Four Wheeler' : 'Two Wheeler'}
+        </span>
+      ),
     },
     {
       key: 'description',
@@ -187,7 +197,7 @@ export default function CategoriesPage() {
         title="Delete category?"
         description={
           deleting
-            ? `Delete “${deleting.name}”? Categories linked to vehicles cannot be deleted.`
+            ? `Delete “${deleting.categoryName}”? Categories linked to vehicles cannot be deleted.`
             : ''
         }
       />

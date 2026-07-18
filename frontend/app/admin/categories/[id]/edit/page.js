@@ -38,7 +38,8 @@ export default function EditCategoryPage() {
     setSaving(true);
     try {
       const payload = {
-        name: values.name,
+        categoryName: values.categoryName,
+        vehicleType: values.vehicleType,
         description: values.description || undefined,
         status: values.status,
       };
@@ -77,14 +78,15 @@ export default function EditCategoryPage() {
       breadcrumbs={[
         { label: 'Admin', href: APP_ROUTES.ADMIN.ROOT },
         { label: 'Categories', href: APP_ROUTES.ADMIN.CATEGORIES },
-        { label: category.name },
+        { label: category.categoryName },
         { label: 'Edit' },
       ]}
     >
       <div className="mx-auto max-w-2xl">
         <CategoryForm
           defaultValues={{
-            name: category.name,
+            categoryName: category.categoryName,
+            vehicleType: category.vehicleType,
             description: category.description || '',
             status: Boolean(category.status),
           }}

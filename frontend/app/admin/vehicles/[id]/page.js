@@ -7,7 +7,6 @@ import { Pencil, Trash2 } from 'lucide-react';
 import MasterPage from '@/components/master/MasterPage';
 import StatusBadge from '@/components/master/StatusBadge';
 import VehicleImageGallery from '@/components/master/VehicleImageGallery';
-import VehiclePricingManager from '@/components/master/VehiclePricingManager';
 import ImageUploader from '@/components/forms/ImageUploader';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Button from '@/components/ui/Button';
@@ -136,10 +135,10 @@ export default function VehicleDetailPage() {
               </div>
             )}
             <div className="grid gap-4 p-6 sm:grid-cols-2">
-              <Detail label="Category" value={vehicle.category?.name} />
+              <Detail label="Category" value={vehicle.category?.categoryName} />
               <Detail
                 label="Availability"
-                value={<StatusBadge status={vehicle.availabilityStatus} />}
+                value={<StatusBadge status={vehicle.status} />}
               />
               <Detail label="Variant" value={vehicle.variant} />
               <Detail label="Year" value={vehicle.year} />
@@ -148,8 +147,13 @@ export default function VehicleDetailPage() {
               <Detail label="Fuel" value={vehicle.fuelType} />
               <Detail label="Transmission" value={vehicle.transmission} />
               <Detail label="Seats" value={vehicle.seatCapacity} />
-              <Detail label="Mileage" value={vehicle.mileage} />
-              <Detail label="Base Price" value={formatCurrency(vehicle.basePrice)} />
+              <Detail label="Mileage" value={`${vehicle.mileage} km/l`} />
+              <Detail label="Engine Capacity" value={vehicle.engineCapacity} />
+              <Detail label="Current Odometer" value={`${vehicle.currentOdometer?.toLocaleString()} km`} />
+              <Detail label="Rent Per Hour" value={formatCurrency(vehicle.rentPerHour)} />
+              <Detail label="Rent Per Day" value={formatCurrency(vehicle.rentPerDay)} />
+              <Detail label="Rent Per Week" value={formatCurrency(vehicle.rentPerWeek)} />
+              <Detail label="Rent Per Month" value={formatCurrency(vehicle.rentPerMonth)} />
               <Detail
                 label="Security Deposit"
                 value={formatCurrency(vehicle.securityDeposit)}
@@ -168,12 +172,6 @@ export default function VehicleDetailPage() {
               </div>
             ) : null}
           </div>
-
-          <VehiclePricingManager
-            vehicleId={id}
-            priceLists={vehicle.priceLists || []}
-            onChanged={load}
-          />
         </div>
 
         <div className="space-y-6">
@@ -197,10 +195,10 @@ export default function VehicleDetailPage() {
               Rental Linkage
             </p>
             <p className="mt-2 text-3xl font-semibold tabular-nums text-primary">
-              {vehicle._count?.rentalItems ?? 0}
+              {vehicle._count?.rentalOrders ?? 0}
             </p>
             <p className="mt-1 text-sm text-muted">
-              Linked rental items — deletion is blocked when this is greater than zero.
+              Linked rental orders — deletion is blocked when this is greater than zero.
             </p>
           </div>
         </div>
