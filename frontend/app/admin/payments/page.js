@@ -44,7 +44,7 @@ export default function PaymentsPage() {
     totalPages: 1,
   });
   const [filters, setFilters] = useState(EMPTY_FILTERS);
-  const [sortBy, setSortBy] = useState('paidAt');
+  const [sortBy, setSortBy] = useState('paymentDate');
   const [sortOrder, setSortOrder] = useState('desc');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -79,10 +79,10 @@ export default function PaymentsPage() {
   }, [load]);
 
   const stats = useMemo(() => {
-    const success = payments.filter((p) => p.paymentStatus === 'SUCCESS');
-    const refunded = payments.filter((p) => p.paymentStatus === 'REFUNDED');
-    const failed = payments.filter((p) => p.paymentStatus === 'FAILED');
-    const totalAmount = success.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+    const success = payments.filter((p) => p.paymentStatus === 'Paid');
+    const refunded = payments.filter((p) => p.paymentStatus === 'Refunded');
+    const failed = payments.filter((p) => p.paymentStatus === 'Failed');
+    const totalAmount = success.reduce((sum, p) => sum + Number(p.totalAmount || 0), 0);
     return {
       count: pagination.total,
       totalAmount,
@@ -108,7 +108,7 @@ export default function PaymentsPage() {
 
   const columns = [
     {
-      key: 'paidAt',
+      key: 'paymentDate',
       header: 'Date',
       sortable: true,
       render: (v, row) => (
@@ -128,16 +128,16 @@ export default function PaymentsPage() {
       render: (_, row) => (
         <div>
           <p className="font-medium text-primary">
-            {row.rentalOrder?.bookingNumber || '—'}
+            {row.order?.orderNumber || '—'}
           </p>
           <p className="text-[11px] text-muted">
-            {customerName(row.rentalOrder?.customer)}
+            {customerName(row.customer)}
           </p>
         </div>
       ),
     },
     {
-      key: 'amount',
+      key: 'totalAmount',
       header: 'Amount',
       sortable: true,
       render: (v) => (

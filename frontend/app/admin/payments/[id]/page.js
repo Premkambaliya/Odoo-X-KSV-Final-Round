@@ -29,7 +29,6 @@ import {
   customerName,
   formatCurrency,
   formatDateTime,
-  vehicleLabel,
 } from '@/lib/format';
 import { getErrorMessage } from '@/lib/apiResponse';
 import notify from '@/lib/toast';
@@ -53,16 +52,16 @@ export default function PaymentDetailPage() {
       const paymentData = result.data;
       setPayment(paymentData);
 
-      if (paymentData?.rentalOrderId) {
+      if (paymentData?.orderId) {
         const orderResult = await rentalService.getRentalOrderById(
-          paymentData.rentalOrderId
+          paymentData.orderId
         );
         const orderData = orderResult.data;
         setOrder(orderData);
 
-        if (orderData?.bookingNumber) {
+        if (orderData?.orderNumber) {
           const payResult = await paymentService.getPayments({
-            orderNumber: orderData.bookingNumber,
+            orderNumber: orderData.orderNumber,
             limit: 100,
             page: 1,
           });
@@ -112,7 +111,7 @@ export default function PaymentDetailPage() {
   async function handleMarkRefunded() {
     setBusy(true);
     try {
-      await paymentService.updateStatus(id, 'REFUNDED');
+      await paymentService.updateStatus(id, 'Refunded');
       notify.success('Payment marked as refunded');
       setConfirm(null);
       load();
@@ -142,22 +141,21 @@ export default function PaymentDetailPage() {
     );
   }
 
-  const rental = order || payment.rentalOrder;
+  const rental = order || payment.order;
   const balance = order
     ? computeBalanceFromOrder(order, relatedPayments)
     : null;
   const paid = order
-    ? Number(order.grandTotal || 0) - (balance ?? 0)
+    ? Number(order.rentalAmount || 0) - (balance ?? 0)
     : null;
   const canStripeRefund =
-    payment.paymentGateway === 'STRIPE' &&
-    payment.paymentStatus === 'SUCCESS' &&
+    payment.paymentStatus === 'Paid' &&
     Boolean(payment.transactionId);
 
   return (
     <MasterPage
       title="Payment Details"
-      description={formatCurrency(payment.amount)}
+      description={formatCurrency(payment.totalAmount)}
       backHref={APP_ROUTES.ADMIN.PAYMENTS}
       breadcrumbs={[
         { label: 'Admin', href: APP_ROUTES.ADMIN.ROOT },
@@ -199,18 +197,16 @@ export default function PaymentDetailPage() {
         <div className="space-y-5">
           <InfoCard title="Transaction details">
             <dl>
-              <InfoRow label="Amount" value={formatCurrency(payment.amount)} />
+              <InfoRow label="Total Amount" value={formatCurrency(payment.totalAmount)} />
+              <InfoRow label="Rental Amount" value={formatCurrency(payment.rentalAmount)} />
+              <InfoRow label="Tax (18%)" value={formatCurrency(payment.taxAmount)} />
               <InfoRow
                 label="Reference"
                 value={payment.transactionId || '—'}
               />
               <InfoRow
-                label="Gateway"
-                value={payment.paymentGateway || 'Manual'}
-              />
-              <InfoRow
                 label="Paid at"
-                value={formatDateTime(payment.paidAt || payment.createdAt)}
+                value={formatDateTime(payment.paymentDate || payment.createdAt)}
               />
               <InfoRow
                 label="Created"
@@ -233,7 +229,7 @@ export default function PaymentDetailPage() {
                       href={APP_ROUTES.ADMIN.RENTAL_ORDER_DETAIL(rental.id)}
                       className="text-accent hover:underline"
                     >
-                      {rental.bookingNumber}
+                      {rental.orderNumber}
                     </Link>
                   ) : (
                     '—'
@@ -242,15 +238,15 @@ export default function PaymentDetailPage() {
               />
               <InfoRow
                 label="Customer"
-                value={customerName(rental?.customer)}
+                value={customerName(rental?.customer || payment.customer)}
               />
               <InfoRow
-                label="Vehicle"
-                value={vehicleLabel(rental?.rentalItems)}
+                label="Rental Unit"
+                value={rental?.rentalUnit ? `${rental.rentalDuration} ${rental.rentalUnit}(s)` : '—'}
               />
               <InfoRow
-                label="Order total"
-                value={formatCurrency(rental?.grandTotal)}
+                label="Rental Amount"
+                value={formatCurrency(rental?.rentalAmount)}
               />
             </dl>
           </InfoCard>
@@ -264,10 +260,10 @@ export default function PaymentDetailPage() {
         <div className="space-y-4">
           {order ? (
             <PaymentSummary
-              orderTotal={order.grandTotal}
+              orderTotal={order.rentalAmount}
               amountPaid={paid}
               balance={balance}
-              paymentStatus={order.paymentStatus}
+              paymentStatus={payment.paymentStatus}
             />
           ) : null}
 
@@ -284,7 +280,7 @@ export default function PaymentDetailPage() {
                 Stripe refund
               </Button>
             ) : null}
-            {payment.paymentStatus === 'SUCCESS' && !canStripeRefund ? (
+            {payment.paymentStatus === 'Paid' && !canStripeRefund ? (
               <Button
                 variant="outline"
                 size="sm"
