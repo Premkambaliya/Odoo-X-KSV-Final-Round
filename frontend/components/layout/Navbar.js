@@ -37,7 +37,7 @@ export default function Navbar({ onMenuClick, variant = 'admin' }) {
     <header className="sticky top-0 z-40 border-b border-border/80 glass">
       <div className="flex h-[72px] items-center justify-between gap-4 px-4 sm:px-6">
         <div className="flex items-center gap-3">
-          {variant === 'admin' ? (
+          {['admin', 'customer'].includes(variant) ? (
             <button
               type="button"
               onClick={onMenuClick}
@@ -48,7 +48,7 @@ export default function Navbar({ onMenuClick, variant = 'admin' }) {
             </button>
           ) : null}
 
-          <div className={variant === 'admin' ? 'lg:hidden' : ''}>
+          <div className={['admin', 'customer'].includes(variant) ? 'lg:hidden' : ''}>
             <Logo size="sm" />
           </div>
 
