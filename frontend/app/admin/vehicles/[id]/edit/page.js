@@ -54,9 +54,7 @@ export default function EditVehiclePage() {
         rentPerMonth: Number(values.rentPerMonth),
         securityDeposit: Number(values.securityDeposit),
         currentOdometer: Number(values.currentOdometer),
-        variant: values.variant || undefined,
         description: values.description || undefined,
-        currentStatus: values.currentStatus || undefined,
       };
       const result = await vehicleService.update(id, payload);
       notify.success(result.message || 'Vehicle updated');
@@ -104,9 +102,7 @@ export default function EditVehiclePage() {
             categoryId: vehicle.categoryId,
             brand: vehicle.brand,
             model: vehicle.model,
-            variant: vehicle.variant || '',
             registrationNumber: vehicle.registrationNumber,
-            vin: vehicle.vin,
             year: vehicle.year,
             fuelType: vehicle.fuelType,
             transmission: vehicle.transmission,
@@ -119,10 +115,9 @@ export default function EditVehiclePage() {
             rentPerWeek: Number(vehicle.rentPerWeek),
             rentPerMonth: Number(vehicle.rentPerMonth),
             securityDeposit: Number(vehicle.securityDeposit),
-            engineCapacity: vehicle.engineCapacity,
+            engineCapacity: vehicle.engineCapacity || '',
             currentOdometer: Number(vehicle.currentOdometer),
             status: vehicle.status,
-            currentStatus: vehicle.currentStatus || '',
           }}
           onSubmit={onSubmit}
           loading={saving}

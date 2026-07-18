@@ -69,7 +69,26 @@ class VehicleService {
       }
     }
 
-    return vehicleRepository.update(id, data);
+    // Whitelist only fields that exist in the Vehicle schema
+    const {
+      categoryId, vehicleName, brand, model, year,
+      registrationNumber, color, fuelType, transmission,
+      seatCapacity, mileage, engineCapacity, currentOdometer,
+      rentPerHour, rentPerDay, rentPerWeek, rentPerMonth,
+      securityDeposit, description, lastServiceDate, status,
+    } = data;
+
+    const payload = Object.fromEntries(
+      Object.entries({
+        categoryId, vehicleName, brand, model, year,
+        registrationNumber, color, fuelType, transmission,
+        seatCapacity, mileage, engineCapacity, currentOdometer,
+        rentPerHour, rentPerDay, rentPerWeek, rentPerMonth,
+        securityDeposit, description, lastServiceDate, status,
+      }).filter(([, v]) => v !== undefined)
+    );
+
+    return vehicleRepository.update(id, payload);
   }
 
   async delete(id) {

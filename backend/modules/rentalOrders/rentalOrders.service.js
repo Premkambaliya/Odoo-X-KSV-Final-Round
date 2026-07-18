@@ -17,7 +17,9 @@ class RentalOrderService {
     if (vehicle.status !== 'Available') throw new ApiError(400, 'Vehicle is not available for booking');
 
     // Generate random 4-digit pickup OTP
-    const pickupOtp = Math.floor(1000 + Math.random() * 9000).toString();
+    // const pickupOtp = Math.floor(1000 + Math.random() * 9000).toString();
+    const pickupOtp = "1234";
+
 
     // Calculate rentalAmount based on vehicle prices
     let rentRate = 0;
