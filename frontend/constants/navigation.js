@@ -8,7 +8,7 @@ import {
   Shield,
   BarChart3,
   User,
-  ShoppingCart,
+  Heart,
   Receipt,
   CalendarRange,
 } from 'lucide-react';
@@ -85,6 +85,13 @@ export const ADMIN_NAV = [
 
 export const CUSTOMER_NAV = [
   {
+    id: 'dashboard',
+    label: 'Dashboard',
+    href: APP_ROUTES.CUSTOMER.DASHBOARD,
+    icon: LayoutDashboard,
+    enabled: true,
+  },
+  {
     id: 'browse',
     label: 'Browse Cars',
     href: APP_ROUTES.CUSTOMER.VEHICLES,
@@ -92,10 +99,10 @@ export const CUSTOMER_NAV = [
     enabled: true,
   },
   {
-    id: 'cart',
-    label: 'Cart',
-    href: APP_ROUTES.CUSTOMER.CART,
-    icon: ShoppingCart,
+    id: 'favourites',
+    label: 'Favourites',
+    href: APP_ROUTES.CUSTOMER.FAVOURITES,
+    icon: Heart,
     enabled: true,
   },
   {
@@ -106,8 +113,8 @@ export const CUSTOMER_NAV = [
     enabled: true,
   },
   {
-    id: 'invoices',
-    label: 'Invoices',
+    id: 'payments',
+    label: 'Payments',
     href: APP_ROUTES.CUSTOMER.PAYMENTS,
     icon: Receipt,
     enabled: true,
