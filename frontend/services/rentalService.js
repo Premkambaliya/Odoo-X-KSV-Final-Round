@@ -28,6 +28,11 @@ const rentalService = {
     return parseApiResponse(response);
   },
 
+  async recalculate(id) {
+    const response = await api.post(API_ROUTES.RENTAL_ORDERS.RECALCULATE(id));
+    return parseApiResponse(response);
+  },
+
   async remove(id) {
     const response = await api.delete(API_ROUTES.RENTAL_ORDERS.BY_ID(id));
     return parseApiResponse(response);

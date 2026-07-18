@@ -11,25 +11,6 @@ import { SETTINGS_DEFAULTS } from '@/lib/validations/settings';
 import { getErrorMessage } from '@/lib/apiResponse';
 import notify from '@/lib/toast';
 
-const LOCAL_KEYS = {
-  timezone: 'crms_org_timezone',
-  logoUrl: 'crms_org_logo_url',
-};
-
-function readLocalExtras() {
-  if (typeof window === 'undefined') return {};
-  return {
-    timezone: localStorage.getItem(LOCAL_KEYS.timezone) || 'Asia/Kolkata',
-    logoUrl: localStorage.getItem(LOCAL_KEYS.logoUrl) || '',
-  };
-}
-
-function writeLocalExtras({ timezone, logoUrl }) {
-  if (typeof window === 'undefined') return;
-  if (timezone) localStorage.setItem(LOCAL_KEYS.timezone, timezone);
-  if (logoUrl != null) localStorage.setItem(LOCAL_KEYS.logoUrl, logoUrl);
-}
-
 export default function SettingsPage() {
   const [values, setValues] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -45,7 +26,6 @@ export default function SettingsPage() {
       setValues({
         ...SETTINGS_DEFAULTS,
         ...data,
-        ...readLocalExtras(),
         taxPercentage: Number(data.taxPercentage ?? 0),
         graceHours: Number(data.graceHours ?? 0),
         lateFeePerHour: Number(data.lateFeePerHour ?? 0),
@@ -85,17 +65,10 @@ export default function SettingsPage() {
       };
 
       const result = await settingsService.updateSettings(payload);
-      writeLocalExtras({
-        timezone: formValues.timezone,
-        logoUrl: formValues.logoUrl || '',
-      });
-
       const saved = result.data || {};
       setValues({
         ...SETTINGS_DEFAULTS,
         ...saved,
-        timezone: formValues.timezone,
-        logoUrl: formValues.logoUrl || '',
         taxPercentage: Number(saved.taxPercentage ?? formValues.taxPercentage),
         graceHours: Number(saved.graceHours ?? formValues.graceHours),
         lateFeePerHour: Number(saved.lateFeePerHour ?? formValues.lateFeePerHour),

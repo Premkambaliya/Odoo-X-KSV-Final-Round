@@ -1,6 +1,10 @@
 import roRepository from './rentalOrders.repository.js';
 import prisma from '../../config/db.js';
 import ApiError from '../../utils/ApiError.js';
+import {
+  recalculateOrderTotals,
+  syncOrderPaymentStatus,
+} from '../../utils/orderTotals.js';
 
 class RentalOrderService {
   async create(data, user) {
@@ -94,15 +98,34 @@ class RentalOrderService {
 
     const updateData = { ...data };
     
-    // If tax or discount changes, recalculate grandTotal
+    // If tax or discount changes, recalculate totals including vehicle deposits + late fee
     if (data.tax !== undefined || data.discount !== undefined) {
-      const subtotal = Number(order.subtotal);
+      const items = await prisma.rentalItem.findMany({
+        where: { rentalOrderId: id },
+        include: { vehicle: true },
+      });
+      const subtotal = items.reduce((acc, item) => acc + Number(item.subtotal), 0);
+      const securityDeposit = items.reduce(
+        (acc, item) => acc + Number(item.vehicle?.securityDeposit || 0),
+        0
+      );
       const tax = data.tax !== undefined ? Number(data.tax) : Number(order.tax);
-      const discount = data.discount !== undefined ? Number(data.discount) : Number(order.discount);
-      updateData.grandTotal = subtotal + tax - discount;
+      const discount =
+        data.discount !== undefined ? Number(data.discount) : Number(order.discount);
+      const lateFee = Number(order.lateFee || 0);
+
+      updateData.subtotal = subtotal;
+      updateData.securityDeposit = securityDeposit;
+      updateData.grandTotal = subtotal + tax - discount + securityDeposit + lateFee;
     }
 
-    return roRepository.update(id, updateData);
+    const updated = await roRepository.update(id, updateData);
+
+    if (updateData.grandTotal !== undefined) {
+      await syncOrderPaymentStatus(prisma, id);
+    }
+
+    return updated;
   }
 
   async updateStatus(id, status, user) {
@@ -155,6 +178,16 @@ class RentalOrderService {
     }
     await roRepository.delete(id);
     return true;
+  }
+
+  async recalculate(id) {
+    const order = await roRepository.findById(id);
+    if (!order) throw new ApiError(404, 'Rental order not found');
+
+    const result = await recalculateOrderTotals(prisma, id);
+    if (!result) throw new ApiError(404, 'Rental order not found');
+
+    return result;
   }
 }
 export default new RentalOrderService();

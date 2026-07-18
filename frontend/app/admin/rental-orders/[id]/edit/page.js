@@ -17,6 +17,7 @@ import vehicleService from '@/services/vehicleService';
 import { APP_ROUTES } from '@/constants/routes';
 import { VEHICLE_AVAILABILITY } from '@/constants/masterData';
 import { toIsoDateTime, toDateInputValue } from '@/lib/listUtils';
+import { computeGrandTotal } from '@/lib/rental';
 import { getErrorMessage } from '@/lib/apiResponse';
 import notify from '@/lib/toast';
 
@@ -218,11 +219,17 @@ export default function EditRentalOrderPage() {
               (s, i) => s + Number(i.vehicle?.securityDeposit || 0),
               0
             )}
-            grandTotal={
-              Number(order.subtotal || 0) +
-              Number(form.tax || 0) -
-              Number(form.discount || 0)
-            }
+            lateFee={order.lateFee}
+            grandTotal={computeGrandTotal({
+              subtotal: order.subtotal,
+              tax: form.tax,
+              discount: form.discount,
+              securityDeposit: (order.rentalItems || []).reduce(
+                (s, i) => s + Number(i.vehicle?.securityDeposit || 0),
+                0
+              ),
+              lateFee: order.lateFee,
+            })}
           />
 
           <div className="surface-card p-6">

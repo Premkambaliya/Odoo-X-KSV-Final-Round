@@ -12,12 +12,54 @@ class UserService {
     return userRepository.update(id, data);
   }
 
-  async getAllUsers() {
-    return userRepository.findAll();
+  async getAllUsers(query = {}) {
+    const page = parseInt(query.page, 10) || 1;
+    const limit = Math.min(parseInt(query.limit, 10) || 50, 100);
+    const skip = (page - 1) * limit;
+
+    const where = {};
+    if (query.role) where.role = query.role;
+    if (query.status) where.status = query.status;
+    if (query.search) {
+      const q = String(query.search).trim();
+      if (q) {
+        where.OR = [
+          { firstName: { contains: q, mode: 'insensitive' } },
+          { lastName: { contains: q, mode: 'insensitive' } },
+          { email: { contains: q, mode: 'insensitive' } },
+          { phone: { contains: q, mode: 'insensitive' } },
+        ];
+      }
+    }
+
+    let orderBy = { createdAt: 'desc' };
+    if (query.sortBy) {
+      const order = query.order === 'asc' ? 'asc' : 'desc';
+      if (['createdAt', 'firstName', 'lastName', 'email', 'lastLogin'].includes(query.sortBy)) {
+        orderBy = { [query.sortBy]: order };
+      }
+    }
+
+    const [total, users] = await userRepository.findAll({
+      skip,
+      take: limit,
+      where,
+      orderBy,
+    });
+
+    return {
+      users,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit) || 1,
+      },
+    };
   }
 
   async getUserById(id) {
-    const user = await userRepository.findById(id);
+    const user = await userRepository.findByIdWithRentals(id);
     if (!user) throw new ApiError(404, 'User not found');
     return user;
   }
@@ -25,6 +67,9 @@ class UserService {
   async deleteUser(id) {
     const user = await userRepository.findById(id);
     if (!user) throw new ApiError(404, 'User not found');
+    if (user.role === 'ADMIN') {
+      throw new ApiError(400, 'Admin accounts cannot be deleted from this endpoint');
+    }
     await userRepository.delete(id);
     return true;
   }

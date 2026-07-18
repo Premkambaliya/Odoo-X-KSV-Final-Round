@@ -49,6 +49,7 @@ export const API_ROUTES = Object.freeze({
     LIST: '/rental-orders',
     BY_ID: (id) => `/rental-orders/${id}`,
     STATUS: (id) => `/rental-orders/${id}/status`,
+    RECALCULATE: (id) => `/rental-orders/${id}/recalculate`,
     ITEMS: (id) => `/rental-orders/${id}/items`,
     QUOTATION: (id) => `/rental-orders/${id}/quotation`,
   },

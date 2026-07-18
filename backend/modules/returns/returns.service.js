@@ -1,6 +1,7 @@
 import rRepository from './returns.repository.js';
 import prisma from '../../config/db.js';
 import ApiError from '../../utils/ApiError.js';
+import { syncOrderPaymentStatus } from '../../utils/orderTotals.js';
 
 class ReturnService {
   async create(data) {
@@ -48,14 +49,16 @@ class ReturnService {
       // Also apply damage and late charges to grandTotal
       const damageCharge = data.damageCharge ? Number(data.damageCharge) : 0;
       const lateCharge = data.lateCharge ? Number(data.lateCharge) : 0;
-      
-      let newGrandTotal = Number(order.grandTotal);
-      let orderUpdateData = { status: 'COMPLETED', actualReturnDate: returnTime };
-      
+
+      const orderUpdateData = {
+        status: 'COMPLETED',
+        actualReturnDate: returnTime,
+      };
+
       if (damageCharge > 0 || lateCharge > 0) {
-        newGrandTotal = newGrandTotal + lateCharge; // damage usually goes to security deposit or penalty, but late fees might go to order grand total
-        // Or if damage is charged on order
-        orderUpdateData.grandTotal = newGrandTotal + damageCharge; 
+        // Late + damage charges increase amount owed on the rental order
+        orderUpdateData.grandTotal =
+          Number(order.grandTotal) + lateCharge + damageCharge;
         orderUpdateData.lateFee = Number(order.lateFee) + lateCharge;
       }
 
@@ -63,6 +66,9 @@ class ReturnService {
         where: { id: data.rentalOrderId },
         data: orderUpdateData
       });
+
+      // Charges may reopen balance — keep paymentStatus in sync
+      await syncOrderPaymentStatus(tx, data.rentalOrderId);
 
       // Release Vehicles back to AVAILABLE
       for (const item of order.rentalItems) {

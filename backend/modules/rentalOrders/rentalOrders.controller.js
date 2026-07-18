@@ -1,6 +1,7 @@
 import roService from './rentalOrders.service.js';
 import catchAsync from '../../utils/catchAsync.js';
 import ApiResponse from '../../utils/ApiResponse.js';
+import ApiError from '../../utils/ApiError.js';
 
 class RentalOrderController {
   create = catchAsync(async (req, res) => {
@@ -31,6 +32,15 @@ class RentalOrderController {
   updateStatus = catchAsync(async (req, res) => {
     const order = await roService.updateStatus(req.params.id, req.body.status, req.user);
     res.status(200).json(new ApiResponse(200, order, 'Rental Order status updated successfully'));
+  });
+  recalculate = catchAsync(async (req, res) => {
+    if (req.user.role !== 'ADMIN') {
+      throw new ApiError(403, 'Only ADMIN can recalculate order totals');
+    }
+    const result = await roService.recalculate(req.params.id);
+    res
+      .status(200)
+      .json(new ApiResponse(200, result, 'Order totals recalculated successfully'));
   });
   delete = catchAsync(async (req, res) => {
     await roService.delete(req.params.id);

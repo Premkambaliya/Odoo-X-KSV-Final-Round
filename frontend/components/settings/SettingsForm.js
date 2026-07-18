@@ -11,7 +11,6 @@ import Button from '@/components/ui/Button';
 import {
   CURRENCY_OPTIONS,
   SETTINGS_DEFAULTS,
-  TIMEZONE_OPTIONS,
   settingsSchema,
 } from '@/lib/validations/settings';
 
@@ -39,7 +38,6 @@ export default function SettingsForm({
     register,
     handleSubmit,
     reset,
-    watch,
     formState: { errors, isDirty },
   } = useForm({
     resolver: zodResolver(settingsSchema),
@@ -51,8 +49,6 @@ export default function SettingsForm({
       reset({ ...SETTINGS_DEFAULTS, ...defaultValues });
     }
   }, [defaultValues, reset]);
-
-  const logoUrl = watch('logoUrl');
 
   function handleResetClick() {
     reset({ ...SETTINGS_DEFAULTS, ...defaultValues });
@@ -124,13 +120,6 @@ export default function SettingsForm({
           error={errors.invoicePrefix?.message}
           {...register('invoicePrefix')}
         />
-        <Select
-          label="Timezone"
-          options={TIMEZONE_OPTIONS}
-          hint="Stored locally until a timezone field is added to the API"
-          error={errors.timezone?.message}
-          {...register('timezone')}
-        />
       </Section>
 
       <Section
@@ -179,32 +168,9 @@ export default function SettingsForm({
       </Section>
 
       <Section
-        title="Branding & terms"
-        description="Quotation copy and optional logo URL"
+        title="Quotation terms"
+        description="Header and footer copy saved on the organization settings record"
       >
-        <div className="sm:col-span-2">
-          <Input
-            label="Logo URL"
-            placeholder="https://…"
-            hint="Logo upload API is not available — paste a hosted image URL (saved locally)"
-            error={errors.logoUrl?.message}
-            {...register('logoUrl')}
-          />
-        </div>
-        {logoUrl ? (
-          <div className="sm:col-span-2">
-            <p className="mb-2 text-xs font-medium text-muted">Logo preview</p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={logoUrl}
-              alt="Organization logo preview"
-              className="h-16 w-auto max-w-full rounded-xl border border-border bg-white object-contain p-2"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-          </div>
-        ) : null}
         <div className="sm:col-span-2">
           <Textarea
             label="Quotation header"
@@ -217,7 +183,7 @@ export default function SettingsForm({
           <Textarea
             label="Terms & conditions"
             rows={5}
-            hint="Saved as quotation footer on the organization settings record"
+            hint="Saved as quotation footer"
             error={errors.quotationFooter?.message}
             {...register('quotationFooter')}
           />

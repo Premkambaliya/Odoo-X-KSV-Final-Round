@@ -65,7 +65,12 @@ export default function CreateRentalPage() {
       setBootLoading(true);
       try {
         const [usersRes, periodsRes, vehiclesRes] = await Promise.all([
-          userService.getUsers(),
+          userService.getUsers({
+            role: ROLES.CUSTOMER,
+            status: 'ACTIVE',
+            limit: 100,
+            page: 1,
+          }),
           rentalPeriodService.getAll(),
           vehicleService.getVehicles({
             availability: VEHICLE_AVAILABILITY.AVAILABLE,
@@ -75,8 +80,15 @@ export default function CreateRentalPage() {
           }),
         ]);
 
-        const allUsers = Array.isArray(usersRes.data) ? usersRes.data : [];
-        setCustomers(allUsers.filter((u) => u.role === ROLES.CUSTOMER && u.status === 'ACTIVE'));
+        const usersPayload = usersRes.data;
+        const allUsers = Array.isArray(usersPayload)
+          ? usersPayload
+          : usersPayload?.users || [];
+        setCustomers(
+          allUsers.filter(
+            (u) => u.role === ROLES.CUSTOMER && u.status === 'ACTIVE'
+          )
+        );
         setPeriods(
           (Array.isArray(periodsRes.data) ? periodsRes.data : []).filter((p) => p.status !== false)
         );

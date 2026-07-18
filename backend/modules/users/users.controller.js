@@ -14,8 +14,8 @@ class UserController {
   });
 
   getAllUsers = catchAsync(async (req, res) => {
-    const users = await userService.getAllUsers();
-    res.status(200).json(new ApiResponse(200, users, 'Users fetched successfully'));
+    const result = await userService.getAllUsers(req.query);
+    res.status(200).json(new ApiResponse(200, result, 'Users fetched successfully'));
   });
 
   getUserById = catchAsync(async (req, res) => {

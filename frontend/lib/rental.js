@@ -39,12 +39,41 @@ export function previewSecurityDeposit(vehicles = []) {
   return vehicles.reduce((sum, v) => sum + Number(v.securityDeposit || 0), 0);
 }
 
-export function previewPricing(vehicles = [], periodDays = 1, tax = 0, discount = 0) {
+export function previewPricing(vehicles = [], periodDays = 1, tax = 0, discount = 0, lateFee = 0) {
   const subtotal = vehicles.reduce(
     (sum, v) => sum + previewVehiclePrice(v, periodDays),
     0
   );
   const deposit = previewSecurityDeposit(vehicles);
-  const grandTotal = subtotal + Number(tax || 0) - Number(discount || 0);
-  return { subtotal, tax: Number(tax || 0), discount: Number(discount || 0), deposit, grandTotal };
+  const grandTotal =
+    subtotal +
+    Number(tax || 0) -
+    Number(discount || 0) +
+    deposit +
+    Number(lateFee || 0);
+  return {
+    subtotal,
+    tax: Number(tax || 0),
+    discount: Number(discount || 0),
+    deposit,
+    lateFee: Number(lateFee || 0),
+    grandTotal,
+  };
+}
+
+/** Canonical grand total formula aligned with backend recalculation. */
+export function computeGrandTotal({
+  subtotal = 0,
+  tax = 0,
+  discount = 0,
+  securityDeposit = 0,
+  lateFee = 0,
+} = {}) {
+  return (
+    Number(subtotal || 0) +
+    Number(tax || 0) -
+    Number(discount || 0) +
+    Number(securityDeposit || 0) +
+    Number(lateFee || 0)
+  );
 }

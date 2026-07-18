@@ -22,15 +22,6 @@ export const settingsSchema = z.object({
   maximumLateFee: z.coerce.number().min(0, 'Maximum late fee cannot be negative'),
   quotationHeader: z.string().max(2000).optional().or(z.literal('')),
   quotationFooter: z.string().max(4000).optional().or(z.literal('')),
-  timezone: z.string().optional().or(z.literal('')),
-  logoUrl: z
-    .string()
-    .optional()
-    .or(z.literal(''))
-    .refine(
-      (val) => !val || /^https?:\/\//i.test(val),
-      'Enter a valid URL'
-    ),
 });
 
 export const SETTINGS_DEFAULTS = {
@@ -49,18 +40,7 @@ export const SETTINGS_DEFAULTS = {
   maximumLateFee: 0,
   quotationHeader: '',
   quotationFooter: '',
-  timezone: 'Asia/Kolkata',
-  logoUrl: '',
 };
-
-export const TIMEZONE_OPTIONS = [
-  { value: 'Asia/Kolkata', label: 'Asia/Kolkata (IST)' },
-  { value: 'UTC', label: 'UTC' },
-  { value: 'America/New_York', label: 'America/New_York (ET)' },
-  { value: 'Europe/London', label: 'Europe/London (GMT)' },
-  { value: 'Asia/Dubai', label: 'Asia/Dubai (GST)' },
-  { value: 'Asia/Singapore', label: 'Asia/Singapore (SGT)' },
-];
 
 export const CURRENCY_OPTIONS = [
   { value: 'INR', label: 'INR — Indian Rupee' },

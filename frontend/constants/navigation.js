@@ -4,6 +4,7 @@ import {
   Tags,
   CalendarRange,
   ClipboardList,
+  Users,
   FileText,
   CreditCard,
   Shield,
@@ -54,6 +55,13 @@ export const ADMIN_NAV = [
     label: 'Rental Orders',
     href: APP_ROUTES.ADMIN.RENTAL_ORDERS,
     icon: ClipboardList,
+    enabled: true,
+  },
+  {
+    id: 'customers',
+    label: 'Customers',
+    href: APP_ROUTES.ADMIN.CUSTOMERS,
+    icon: Users,
     enabled: true,
   },
   {

@@ -6,8 +6,18 @@ import Sidebar from '@/components/layout/Sidebar';
 import Footer from '@/components/layout/Footer';
 import RoleGuard from '@/components/common/RoleGuard';
 import { ROLES } from '@/constants/roles';
+import categoryService from '@/services/categoryService';
+import rentalPeriodService from '@/services/rentalPeriodService';
 
 const COLLAPSE_KEY = 'crms_admin_sidebar_collapsed';
+
+/** Warm shared GET caches so list/filter pages feel faster after first visit. */
+function prefetchAdminLookups() {
+  Promise.allSettled([
+    categoryService.getAll(),
+    rentalPeriodService.getAll(),
+  ]).catch(() => {});
+}
 
 export default function AdminLayout({ children }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -20,6 +30,27 @@ export default function AdminLayout({ children }) {
     } catch {
       // ignore storage errors
     }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = () => {
+      if (!cancelled) prefetchAdminLookups();
+    };
+
+    if (typeof window !== 'undefined' && window.requestIdleCallback) {
+      const idleId = window.requestIdleCallback(run, { timeout: 2500 });
+      return () => {
+        cancelled = true;
+        window.cancelIdleCallback(idleId);
+      };
+    }
+
+    const timeoutId = window.setTimeout(run, 600);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   function handleCollapseToggle() {

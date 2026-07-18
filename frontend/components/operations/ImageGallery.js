@@ -2,27 +2,14 @@
 
 import { memo, useState } from 'react';
 import Image from 'next/image';
-import { ImageIcon } from 'lucide-react';
-import EmptyState from '@/components/dashboard/EmptyState';
 
-function ImageGallery({ images = [], title = 'Inspection images', emptyHint }) {
+function ImageGallery({ images = [], title = 'Inspection images' }) {
   const [active, setActive] = useState(0);
   const list = Array.isArray(images) ? images.filter(Boolean) : [];
 
+  // Hide empty galleries — evidence uploads are not exposed by the API yet
   if (!list.length) {
-    return (
-      <div className="surface-card p-5">
-        <h3 className="mb-2 text-base font-semibold text-primary">{title}</h3>
-        <EmptyState
-          title="No images available"
-          description={
-            emptyHint ||
-            'Pickup and return image uploads are not exposed by the current API. Vehicle gallery images appear here when available.'
-          }
-          icon={ImageIcon}
-        />
-      </div>
-    );
+    return null;
   }
 
   const current = list[Math.min(active, list.length - 1)];

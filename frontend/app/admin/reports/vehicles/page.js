@@ -42,7 +42,7 @@ export default function VehicleReportPage() {
     setError('');
     try {
       const [vehRes, catRes] = await Promise.all([
-        vehicleService.getVehicles({ limit: 500 }),
+        vehicleService.getVehicles({ limit: 100 }),
         categoryService.getAll(),
       ]);
       setRaw(vehRes.data?.vehicles || []);

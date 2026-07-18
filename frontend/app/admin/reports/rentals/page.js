@@ -55,7 +55,7 @@ export default function RentalReportPage() {
   useEffect(() => {
     Promise.all([
       categoryService.getAll(),
-      vehicleService.getVehicles({ limit: 200 }),
+      vehicleService.getVehicles({ limit: 100 }),
     ])
       .then(([cats, vehs]) => {
         setCategories(Array.isArray(cats.data) ? cats.data : []);

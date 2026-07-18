@@ -20,6 +20,12 @@ router.put('/:id', validate(updateRentalOrderSchema), roController.update);
 // Status update (Confirming, Cancelling etc)
 router.patch('/:id/status', validate(updateOrderStatusSchema), roController.updateStatus);
 
+router.post(
+  '/:id/recalculate',
+  authorize('ADMIN'),
+  roController.recalculate
+);
+
 router.delete('/:id', roController.delete);
 
 export default router;

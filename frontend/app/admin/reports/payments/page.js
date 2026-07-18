@@ -44,7 +44,7 @@ export default function PaymentReportPage() {
     setLoading(true);
     setError('');
     try {
-      const result = await paymentService.getPayments({ limit: 500 });
+      const result = await paymentService.getPayments({ limit: 100 });
       const list = result.data?.payments || result.data || [];
       setRaw(Array.isArray(list) ? list : []);
     } catch (err) {

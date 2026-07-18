@@ -1,18 +1,29 @@
 import pRepository from './payments.repository.js';
 import prisma from '../../config/db.js';
 import ApiError from '../../utils/ApiError.js';
+import {
+  resolvePaymentStatus,
+  syncOrderPaymentStatus,
+} from '../../utils/orderTotals.js';
 
 class PaymentService {
   async processPayment(data) {
     const order = await pRepository.getOrder(data.rentalOrderId);
     if (!order) throw new ApiError(404, 'Rental order not found');
-    if (order.status === 'CANCELLED') throw new ApiError(400, 'Cannot make payment for cancelled order');
+    if (order.status === 'CANCELLED') {
+      throw new ApiError(400, 'Cannot make payment for cancelled order');
+    }
 
-    const totalPaid = order.payments.reduce((acc, curr) => acc + Number(curr.amount), 0);
+    const totalPaid = order.payments
+      .filter((p) => p.paymentStatus === 'SUCCESS')
+      .reduce((acc, curr) => acc + Number(curr.amount), 0);
     const balance = Number(order.grandTotal) - totalPaid;
 
-    if (data.amount > balance) {
-      throw new ApiError(400, `Payment amount (${data.amount}) cannot exceed remaining balance (${balance})`);
+    if (data.amount > balance + 0.0001) {
+      throw new ApiError(
+        400,
+        `Payment amount (${data.amount}) cannot exceed remaining balance (${balance})`
+      );
     }
 
     return prisma.$transaction(async (tx) => {
@@ -23,19 +34,20 @@ class PaymentService {
           paymentMethod: data.paymentMethod,
           transactionId: data.transactionId,
           paymentGateway: data.paymentGateway,
-          paymentStatus: 'SUCCESS'
-        }
+          paymentStatus: 'SUCCESS',
+        },
       });
 
-      const newTotalPaid = totalPaid + data.amount;
+      const newTotalPaid = totalPaid + Number(data.amount);
+      const newPaymentStatus = resolvePaymentStatus(
+        order.grandTotal,
+        newTotalPaid
+      );
       const newBalance = Number(order.grandTotal) - newTotalPaid;
-      
-      let newPaymentStatus = 'PARTIAL';
-      if (newBalance <= 0) newPaymentStatus = 'PAID';
-      
+
       await tx.rentalOrder.update({
         where: { id: data.rentalOrderId },
-        data: { paymentStatus: newPaymentStatus }
+        data: { paymentStatus: newPaymentStatus },
       });
 
       return {
@@ -43,7 +55,7 @@ class PaymentService {
         orderTotal: order.grandTotal,
         totalPaid: newTotalPaid,
         balance: newBalance,
-        orderPaymentStatus: newPaymentStatus
+        orderPaymentStatus: newPaymentStatus,
       };
     });
   }
@@ -54,24 +66,40 @@ class PaymentService {
     const skip = (page - 1) * limit;
 
     const where = {};
-    if (query.transactionId) where.transactionId = { contains: query.transactionId, mode: 'insensitive' };
-    if (query.orderNumber) where.rentalOrder = { bookingNumber: { contains: query.orderNumber, mode: 'insensitive' } };
+    if (query.transactionId) {
+      where.transactionId = {
+        contains: query.transactionId,
+        mode: 'insensitive',
+      };
+    }
+    if (query.orderNumber) {
+      where.rentalOrder = {
+        bookingNumber: { contains: query.orderNumber, mode: 'insensitive' },
+      };
+    }
     if (query.customerName) {
       where.rentalOrder = {
         ...where.rentalOrder,
         customer: {
           OR: [
-            { firstName: { contains: query.customerName, mode: 'insensitive' } },
-            { lastName: { contains: query.customerName, mode: 'insensitive' } }
-          ]
-        }
+            {
+              firstName: { contains: query.customerName, mode: 'insensitive' },
+            },
+            {
+              lastName: { contains: query.customerName, mode: 'insensitive' },
+            },
+          ],
+        },
       };
     }
     if (query.paymentStatus) where.paymentStatus = query.paymentStatus;
     if (query.paymentMethod) where.paymentMethod = query.paymentMethod;
     if (query.date) {
       const d = new Date(query.date);
-      where.paidAt = { gte: new Date(d.setHours(0,0,0,0)), lte: new Date(d.setHours(23,59,59,999)) };
+      where.paidAt = {
+        gte: new Date(d.setHours(0, 0, 0, 0)),
+        lte: new Date(d.setHours(23, 59, 59, 999)),
+      };
     }
 
     let orderBy = {};
@@ -84,10 +112,20 @@ class PaymentService {
       orderBy = { paidAt: 'desc' };
     }
 
-    const [total, payments] = await pRepository.findAll({ skip, take: limit, where, orderBy });
+    const [total, payments] = await pRepository.findAll({
+      skip,
+      take: limit,
+      where,
+      orderBy,
+    });
     return {
       payments,
-      pagination: { total, page, limit, totalPages: Math.ceil(total / limit) }
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
@@ -104,25 +142,10 @@ class PaymentService {
     return prisma.$transaction(async (tx) => {
       const updatedPayment = await tx.payment.update({
         where: { id },
-        data: { paymentStatus: status }
+        data: { paymentStatus: status },
       });
 
-      // Recalculate Order Status
-      const allSuccess = await tx.payment.findMany({
-        where: { rentalOrderId: payment.rentalOrderId, paymentStatus: 'SUCCESS' }
-      });
-      const order = await tx.rentalOrder.findUnique({ where: { id: payment.rentalOrderId } });
-      const totalPaid = allSuccess.reduce((acc, curr) => acc + Number(curr.amount), 0);
-      const balance = Number(order.grandTotal) - totalPaid;
-      
-      let newPaymentStatus = 'PENDING';
-      if (totalPaid > 0 && balance > 0) newPaymentStatus = 'PARTIAL';
-      if (balance <= 0) newPaymentStatus = 'PAID';
-
-      await tx.rentalOrder.update({
-        where: { id: payment.rentalOrderId },
-        data: { paymentStatus: newPaymentStatus }
-      });
+      await syncOrderPaymentStatus(tx, payment.rentalOrderId);
 
       return updatedPayment;
     });
@@ -131,27 +154,10 @@ class PaymentService {
   async delete(id) {
     const payment = await pRepository.findById(id);
     if (!payment) throw new ApiError(404, 'Payment not found');
-    
+
     return prisma.$transaction(async (tx) => {
       await tx.payment.delete({ where: { id } });
-
-      // Recalculate
-      const allSuccess = await tx.payment.findMany({
-        where: { rentalOrderId: payment.rentalOrderId, paymentStatus: 'SUCCESS' }
-      });
-      const order = await tx.rentalOrder.findUnique({ where: { id: payment.rentalOrderId } });
-      const totalPaid = allSuccess.reduce((acc, curr) => acc + Number(curr.amount), 0);
-      const balance = Number(order.grandTotal) - totalPaid;
-      
-      let newPaymentStatus = 'PENDING';
-      if (totalPaid > 0 && balance > 0) newPaymentStatus = 'PARTIAL';
-      if (totalPaid > 0 && balance <= 0) newPaymentStatus = 'PAID';
-
-      await tx.rentalOrder.update({
-        where: { id: payment.rentalOrderId },
-        data: { paymentStatus: newPaymentStatus }
-      });
-
+      await syncOrderPaymentStatus(tx, payment.rentalOrderId);
       return true;
     });
   }

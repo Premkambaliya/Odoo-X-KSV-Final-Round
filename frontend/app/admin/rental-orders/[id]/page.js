@@ -13,6 +13,8 @@ import {
   AlertTriangle,
   Pencil,
   Play,
+  Printer,
+  RefreshCw,
   Shield,
   Trash2,
 } from 'lucide-react';
@@ -33,7 +35,7 @@ import pickupService from '@/services/pickupService';
 import returnService from '@/services/returnService';
 import penaltyService from '@/services/penaltyService';
 import { APP_ROUTES } from '@/constants/routes';
-import { itemLineTotal } from '@/lib/rental';
+import { itemLineTotal, computeGrandTotal } from '@/lib/rental';
 import {
   customerName,
   formatCurrency,
@@ -124,6 +126,20 @@ export default function RentalOrderDetailPage() {
     }
   }
 
+  async function handleRecalculate() {
+    setBusy(true);
+    try {
+      const result = await rentalService.recalculate(id);
+      notify.success(result.message || 'Totals recalculated');
+      setConfirm(null);
+      load();
+    } catch (err) {
+      notify.error(getErrorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleGenerateQuotation() {
     setBusy(true);
     try {
@@ -164,10 +180,19 @@ export default function RentalOrderDetailPage() {
   }
 
   const items = order.rentalItems || [];
-  const depositEstimate = items.reduce(
-    (sum, item) => sum + Number(item.vehicle?.securityDeposit || 0),
-    0
-  );
+  const displayDeposit =
+    Number(order.securityDeposit || 0) ||
+    items.reduce(
+      (sum, item) => sum + Number(item.vehicle?.securityDeposit || 0),
+      0
+    );
+  const displayGrandTotal = computeGrandTotal({
+    subtotal: order.subtotal,
+    tax: order.tax,
+    discount: order.discount,
+    securityDeposit: displayDeposit,
+    lateFee: order.lateFee,
+  });
 
   return (
     <MasterPage
@@ -286,6 +311,15 @@ export default function RentalOrderDetailPage() {
               Cancel
             </Button>
           ) : null}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setConfirm({ type: 'recalculate' })}
+            disabled={busy}
+          >
+            <RefreshCw size={14} />
+            Recalculate
+          </Button>
           {order.status === 'PENDING' || order.status === 'CANCELLED' ? (
             <Button
               size="sm"
@@ -304,7 +338,10 @@ export default function RentalOrderDetailPage() {
           <InfoCard title="Booking Overview">
             <dl>
               <InfoRow label="Status" value={<StatusBadge status={order.status} />} />
-              <InfoRow label="Payment status" value={<StatusBadge status={order.paymentStatus} />} />
+              <InfoRow
+                label="Rental payment status"
+                value={<StatusBadge status={order.paymentStatus} />}
+              />
               <InfoRow label="Customer" value={customerName(order.customer)} />
               <InfoRow label="Email" value={order.customer?.email} />
               <InfoRow label="Phone" value={order.customer?.phone} />
@@ -345,8 +382,9 @@ export default function RentalOrderDetailPage() {
             subtotal={order.subtotal}
             tax={order.tax}
             discount={order.discount}
-            deposit={depositEstimate || order.securityDeposit}
-            grandTotal={order.grandTotal}
+            deposit={displayDeposit}
+            lateFee={order.lateFee}
+            grandTotal={displayGrandTotal}
           />
           <OperationsTimeline
             order={order}
@@ -393,7 +431,9 @@ export default function RentalOrderDetailPage() {
                 ? 'Complete rental?'
                 : confirm?.type === 'cancel'
                   ? 'Cancel rental?'
-                  : 'Delete rental?'
+                  : confirm?.type === 'recalculate'
+                    ? 'Recalculate totals?'
+                    : 'Delete rental?'
         }
         description={
           confirm?.type === 'confirm'
@@ -402,7 +442,9 @@ export default function RentalOrderDetailPage() {
               ? 'Vehicles will be released back to AVAILABLE.'
               : confirm?.type === 'delete'
                 ? 'This permanently removes the booking.'
-                : 'Update the rental lifecycle status.'
+                : confirm?.type === 'recalculate'
+                  ? 'Rebuilds subtotal, security deposit, and grand total from rental items, then syncs payment status.'
+                  : 'Update the rental lifecycle status.'
         }
         confirmLabel="Confirm"
         onConfirm={() => {
@@ -410,6 +452,7 @@ export default function RentalOrderDetailPage() {
           if (confirm?.type === 'active') return runStatus('ACTIVE');
           if (confirm?.type === 'complete') return runStatus('COMPLETED');
           if (confirm?.type === 'cancel') return runStatus('CANCELLED');
+          if (confirm?.type === 'recalculate') return handleRecalculate();
           return handleDelete();
         }}
       />

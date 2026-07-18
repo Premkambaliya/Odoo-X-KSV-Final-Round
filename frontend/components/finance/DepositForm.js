@@ -131,6 +131,11 @@ export default function DepositForm({
             Required deposit:{' '}
             {formatCurrency(selectedOrder.securityDeposit)}
           </p>
+          <p className="mt-2 text-xs leading-relaxed text-secondary">
+            This records a deposit hold/ledger against the booking. The deposit
+            amount is already included in the rental grand total — collecting
+            here does not charge it a second time.
+          </p>
         </div>
       ) : null}
 

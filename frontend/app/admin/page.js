@@ -21,7 +21,7 @@ import { APP_ROUTES } from '@/constants/routes';
 
 export default function AdminDashboardPage() {
   const { user } = useAuth();
-  const { loading, error, data, reload } = useDashboardData();
+  const { loading, refreshing, error, data, reload } = useDashboardData();
 
   if (error && !data) {
     return (
@@ -45,7 +45,11 @@ export default function AdminDashboardPage() {
     <PageContainer>
       <Header
         title="Dashboard"
-        description="Live operational intelligence for your rental fleet"
+        description={
+          refreshing
+            ? 'Refreshing live operational data…'
+            : 'Live operational intelligence for your rental fleet'
+        }
         breadcrumbs={[{ label: 'Admin', href: APP_ROUTES.ADMIN.ROOT }, { label: 'Dashboard' }]}
       />
 

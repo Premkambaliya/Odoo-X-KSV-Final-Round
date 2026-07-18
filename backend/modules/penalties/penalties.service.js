@@ -1,6 +1,7 @@
 import pRepository from './penalties.repository.js';
 import prisma from '../../config/db.js';
 import ApiError from '../../utils/ApiError.js';
+import { syncOrderPaymentStatus } from '../../utils/orderTotals.js';
 
 class PenaltyService {
   async create(data) {
@@ -59,6 +60,7 @@ class PenaltyService {
             grandTotal: Number(order.grandTotal) + remainingPenalty
           }
         });
+        await syncOrderPaymentStatus(tx, order.id);
       }
     } else {
       // No deposit, add completely to grand total
@@ -69,6 +71,7 @@ class PenaltyService {
           grandTotal: Number(order.grandTotal) + penaltyAmount
         }
       });
+      await syncOrderPaymentStatus(tx, order.id);
     }
   }
 
@@ -176,20 +179,18 @@ class PenaltyService {
     const unpaidPenalties = order.penalties.filter(p => p.status === 'UNPAID');
     if (unpaidPenalties.length > 0) return false; // Still has unpaid penalties
 
-    const totalPaid = order.payments.filter(p => p.paymentStatus === 'SUCCESS').reduce((acc, curr) => acc + Number(curr.amount), 0);
-    const balance = Number(order.grandTotal) - totalPaid;
+    const paymentSync = await syncOrderPaymentStatus(prisma, orderId);
+    if (!paymentSync || paymentSync.balance > 0) return false;
 
-    if (balance <= 0) {
+    // Fully settled after return → COMPLETED (never LATE)
+    if (order.status !== 'COMPLETED') {
       await prisma.rentalOrder.update({
         where: { id: orderId },
-        data: { status: 'LATE' } // Wait, LATE? No, closed is not an enum in RentalOrderStatus. Wait! Enum: PENDING, CONFIRMED, ACTIVE, COMPLETED, CANCELLED, LATE.
-        // Prompt says: Rental Status CLOSED. But schema doesn't have CLOSED. COMPLETED is used for returned.
-        // If it requires closure, we can leave it at COMPLETED or add logic. Since COMPLETED is the highest success state, we ensure it's COMPLETED.
+        data: { status: 'COMPLETED', paymentStatus: 'PAID' },
       });
-      return true;
     }
 
-    return false;
+    return true;
   }
 
   async getAll(query) {

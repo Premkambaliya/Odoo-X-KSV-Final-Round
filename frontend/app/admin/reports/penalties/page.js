@@ -38,7 +38,7 @@ export default function PenaltyReportPage() {
     setLoading(true);
     setError('');
     try {
-      const result = await penaltyService.getPenalties({ limit: 500 });
+      const result = await penaltyService.getPenalties({ limit: 100 });
       const list = result.data?.penalties || result.data || [];
       setRaw(Array.isArray(list) ? list : []);
     } catch (err) {

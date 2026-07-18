@@ -13,8 +13,8 @@ const userService = {
     return parseApiResponse(response);
   },
 
-  async getUsers() {
-    const response = await api.get(API_ROUTES.USERS.LIST);
+  async getUsers(params = {}) {
+    const response = await api.get(API_ROUTES.USERS.LIST, { params });
     return parseApiResponse(response);
   },
 

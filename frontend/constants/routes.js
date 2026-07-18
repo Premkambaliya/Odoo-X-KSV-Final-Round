@@ -29,6 +29,8 @@ export const APP_ROUTES = Object.freeze({
     RENTAL_ORDER_NEW: '/admin/rental-orders/new',
     RENTAL_ORDER_DETAIL: (id) => `/admin/rental-orders/${id}`,
     RENTAL_ORDER_EDIT: (id) => `/admin/rental-orders/${id}/edit`,
+    CUSTOMERS: '/admin/customers',
+    CUSTOMER_DETAIL: (id) => `/admin/customers/${id}`,
     QUOTATIONS: '/admin/quotations',
     QUOTATION_DETAIL: (id) => `/admin/quotations/${id}`,
     QUOTATION_BY_ORDER: (orderId) => `/admin/quotations/order/${orderId}`,

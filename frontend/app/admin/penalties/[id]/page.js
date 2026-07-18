@@ -8,7 +8,6 @@ import MasterPage from '@/components/master/MasterPage';
 import InfoCard, { InfoRow } from '@/components/rental/InfoCard';
 import OperationsStatusBadge from '@/components/operations/OperationsStatusBadge';
 import OperationsTimeline from '@/components/operations/OperationsTimeline';
-import ImageGallery from '@/components/operations/ImageGallery';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Button from '@/components/ui/Button';
 import PageLoader from '@/components/common/PageLoader';
@@ -194,7 +193,7 @@ export default function PenaltyDetailPage() {
                 }
               />
               <InfoRow
-                label="Status"
+                label="Penalty status"
                 value={
                   <OperationsStatusBadge status={penalty.status} kind="penalty" />
                 }
@@ -225,17 +224,11 @@ export default function PenaltyDetailPage() {
                 value={vehicleLabel(rental?.rentalItems)}
               />
               <InfoRow
-                label="Payment status"
+                label="Rental payment status"
                 value={rental?.paymentStatus || '—'}
               />
             </dl>
           </InfoCard>
-
-          <ImageGallery
-            images={[]}
-            title="Evidence images"
-            emptyHint="Penalty evidence uploads are not exposed by the current API."
-          />
         </div>
 
         <OperationsTimeline

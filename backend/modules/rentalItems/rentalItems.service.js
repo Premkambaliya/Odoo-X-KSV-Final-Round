@@ -3,6 +3,37 @@ import availabilityService from './availability.service.js';
 import prisma from '../../config/db.js';
 import ApiError from '../../utils/ApiError.js';
 
+async function recalculateOrderTotals(tx, orderId, orderSnapshot) {
+  const allItems = await tx.rentalItem.findMany({
+    where: { rentalOrderId: orderId },
+    include: { vehicle: true },
+  });
+
+  const orderSubtotal = allItems.reduce(
+    (acc, curr) => acc + Number(curr.subtotal),
+    0
+  );
+  const securityDeposit = allItems.reduce(
+    (acc, curr) => acc + Number(curr.vehicle?.securityDeposit || 0),
+    0
+  );
+  const tax = Number(orderSnapshot.tax || 0);
+  const discount = Number(orderSnapshot.discount || 0);
+  const lateFee = Number(orderSnapshot.lateFee || 0);
+  const grandTotal = orderSubtotal + tax - discount + securityDeposit + lateFee;
+
+  await tx.rentalOrder.update({
+    where: { id: orderId },
+    data: {
+      subtotal: orderSubtotal,
+      securityDeposit,
+      grandTotal,
+    },
+  });
+
+  return { orderSubtotal, securityDeposit, grandTotal };
+}
+
 class RentalItemService {
   async addRentalItem(orderId, vehicleId) {
     const order = await itemRepository.getOrder(orderId);
@@ -13,7 +44,9 @@ class RentalItemService {
     }
 
     const availability = await availabilityService.checkVehicleAvailability(
-      vehicleId, order.pickupDate, order.expectedReturnDate
+      vehicleId,
+      order.pickupDate,
+      order.expectedReturnDate
     );
 
     if (!availability.available) {
@@ -25,27 +58,19 @@ class RentalItemService {
     const unitPrice = Number(vehicle.basePrice) * rentalPeriodDays;
     const quantity = 1;
     const subtotal = unitPrice * quantity;
-    
+
     return prisma.$transaction(async (tx) => {
       const item = await tx.rentalItem.create({
         data: {
           rentalOrderId: orderId,
-          vehicleId: vehicleId,
+          vehicleId,
           quantity,
           unitPrice,
           subtotal,
-        }
+        },
       });
 
-      // Recalculate Order Totals
-      const allItems = await tx.rentalItem.findMany({ where: { rentalOrderId: orderId } });
-      const orderSubtotal = allItems.reduce((acc, curr) => acc + Number(curr.subtotal), 0);
-      const grandTotal = orderSubtotal + Number(order.tax) - Number(order.discount);
-
-      await tx.rentalOrder.update({
-        where: { id: orderId },
-        data: { subtotal: orderSubtotal, grandTotal }
-      });
+      await recalculateOrderTotals(tx, orderId, order);
 
       return item;
     });
@@ -54,31 +79,27 @@ class RentalItemService {
   async getItems(orderId) {
     const items = await prisma.rentalItem.findMany({
       where: { rentalOrderId: orderId },
-      include: { vehicle: true }
+      include: { vehicle: true },
     });
     return items;
   }
 
   async removeItem(itemId) {
-    const item = await prisma.rentalItem.findUnique({ where: { id: itemId }, include: { rentalOrder: true } });
+    const item = await prisma.rentalItem.findUnique({
+      where: { id: itemId },
+      include: { rentalOrder: true },
+    });
     if (!item) throw new ApiError(404, 'Rental item not found');
-    if (item.rentalOrder.status !== 'PENDING') throw new ApiError(400, 'Cannot remove items from non-pending orders');
+    if (item.rentalOrder.status !== 'PENDING') {
+      throw new ApiError(400, 'Cannot remove items from non-pending orders');
+    }
 
     return prisma.$transaction(async (tx) => {
       await tx.rentalItem.delete({ where: { id: itemId } });
-
-      // Recalculate Order Totals
-      const allItems = await tx.rentalItem.findMany({ where: { rentalOrderId: item.rentalOrderId } });
-      const orderSubtotal = allItems.reduce((acc, curr) => acc + Number(curr.subtotal), 0);
-      const grandTotal = orderSubtotal + Number(item.rentalOrder.tax) - Number(item.rentalOrder.discount);
-
-      await tx.rentalOrder.update({
-        where: { id: item.rentalOrderId },
-        data: { subtotal: orderSubtotal, grandTotal }
-      });
-
+      await recalculateOrderTotals(tx, item.rentalOrderId, item.rentalOrder);
       return true;
     });
   }
 }
+
 export default new RentalItemService();
