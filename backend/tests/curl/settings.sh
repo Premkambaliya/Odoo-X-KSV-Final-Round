@@ -1,0 +1,1 @@
+#!/bin/bash\n# cURL commands for settings module\n\n# Linux/macOS\necho "Testing settings..."\ncurl -X GET "http://localhost:5000/api/settings" -H "Authorization: Bearer $JWT_TOKEN"\n\n# PowerShell equivalent\n# Invoke-RestMethod -Uri "http://localhost:5000/api/settings" -Method GET -Headers @{ Authorization = "Bearer $JWT_TOKEN" }\n

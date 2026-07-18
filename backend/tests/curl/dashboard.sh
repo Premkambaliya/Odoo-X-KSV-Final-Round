@@ -1,0 +1,1 @@
+#!/bin/bash\n# cURL commands for dashboard module\n\n# Linux/macOS\necho "Testing dashboard..."\ncurl -X GET "http://localhost:5000/api/dashboard" -H "Authorization: Bearer $JWT_TOKEN"\n\n# PowerShell equivalent\n# Invoke-RestMethod -Uri "http://localhost:5000/api/dashboard" -Method GET -Headers @{ Authorization = "Bearer $JWT_TOKEN" }\n

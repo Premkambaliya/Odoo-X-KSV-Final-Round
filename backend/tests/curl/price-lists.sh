@@ -1,0 +1,1 @@
+#!/bin/bash\n# cURL commands for price-lists module\n\n# Linux/macOS\necho "Testing price-lists..."\ncurl -X GET "http://localhost:5000/api/price-lists" -H "Authorization: Bearer $JWT_TOKEN"\n\n# PowerShell equivalent\n# Invoke-RestMethod -Uri "http://localhost:5000/api/price-lists" -Method GET -Headers @{ Authorization = "Bearer $JWT_TOKEN" }\n

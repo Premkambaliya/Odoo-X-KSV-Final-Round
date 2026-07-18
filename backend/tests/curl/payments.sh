@@ -1,0 +1,1 @@
+#!/bin/bash\n# cURL commands for payments module\n\n# Linux/macOS\necho "Testing payments..."\ncurl -X GET "http://localhost:5000/api/payments" -H "Authorization: Bearer $JWT_TOKEN"\n\n# PowerShell equivalent\n# Invoke-RestMethod -Uri "http://localhost:5000/api/payments" -Method GET -Headers @{ Authorization = "Bearer $JWT_TOKEN" }\n
