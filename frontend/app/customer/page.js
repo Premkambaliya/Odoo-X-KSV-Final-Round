@@ -95,15 +95,20 @@ export default function CustomerDashboardPage() {
     setLoading(true);
     try {
       const [all, pending] = await Promise.all([
-        rentalService.getRentalOrders({ limit: 100 }),
+        rentalService.getRentalOrders({ limit: 100, sortBy: 'createdAt', order: 'desc' }),
         paymentService.getPayments({ paymentStatus: 'Pending', limit: 100 }),
       ]);
 
-      const orders = all.data?.rentalOrders || [];
+      // Backend returns key 'orders' from getAll
+      const orders = all.data?.orders || [];
       setStats({
+        // Active = vehicle physically picked up (OTP done)
         active: orders.filter((o) => o.orderStatus === 'Active').length,
+        // Upcoming = admin confirmed, not yet picked up
         upcoming: orders.filter((o) => o.orderStatus === 'Confirmed').length,
+        // Completed = returned and closed
         completed: orders.filter((o) => o.orderStatus === 'Completed').length,
+        // Pending payments from payment records
         pendingPayment: pending.data?.payments?.length || 0,
       });
       setRecentRentals(orders.slice(0, 5));
@@ -134,7 +139,7 @@ export default function CustomerDashboardPage() {
         />
         <StatCard
           icon={CalendarRange}
-          label="Upcoming"
+          label="Confirmed (Upcoming)"
           value={stats.upcoming}
           tone="accent"
           href={APP_ROUTES.CUSTOMER.RENTALS}

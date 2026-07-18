@@ -11,10 +11,17 @@ import { formatCurrency, formatDate } from '@/lib/format';
 import { getErrorMessage } from '@/lib/apiResponse';
 import notify from '@/lib/toast';
 
+// Customer-facing tab definitions
+// Pending   = customer booked, waiting admin approval
+// Confirmed = admin accepted (upcoming — vehicle not picked up yet)
+// Active    = vehicle picked up (OTP done), rental running
+// Completed = returned and closed
+// Cancelled = cancelled by either party
 const TABS = [
   { key: '', label: 'All' },
-  { key: 'Active', label: 'Active' },
+  { key: 'Pending', label: 'Pending Approval' },
   { key: 'Confirmed', label: 'Upcoming' },
+  { key: 'Active', label: 'Active' },
   { key: 'Completed', label: 'Completed' },
   { key: 'Cancelled', label: 'Cancelled' },
 ];
@@ -47,7 +54,8 @@ export default function CustomerRentalsPage() {
       const params = { page: pg, limit: 10, sortBy: 'createdAt', order: 'desc' };
       if (activeTab) params.orderStatus = activeTab;
       const res = await rentalService.getRentalOrders(params);
-      setOrders(res.data?.rentalOrders || []);
+      // Backend returns key 'orders' from the getAll service method
+      setOrders(res.data?.orders || []);
       setPagination(res.data?.pagination || { total: 0, totalPages: 1 });
       setPage(pg);
     } catch (err) {
