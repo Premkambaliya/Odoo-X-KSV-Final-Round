@@ -271,7 +271,7 @@ class RentalOrderService {
           penaltyReason: data.penaltyReason || (penaltyAmount > 0 ? 'Deducted for return damages/delays' : null),
           refundAmount,
           refundStatus: 'Pending',
-          depositStatus: 'Released',
+          depositStatus: 'Held',
           refundDate: null
         }
       });

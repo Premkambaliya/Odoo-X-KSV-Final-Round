@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { Car, CreditCard, ShieldCheck, FileText, CheckCircle, Circle, Clock } from 'lucide-react';
+import { Car, CreditCard, ShieldCheck, FileText, CheckCircle, Circle, Clock, Printer } from 'lucide-react';
 import MasterPage from '@/components/master/MasterPage';
 import PageLoader from '@/components/common/PageLoader';
 import ErrorState from '@/components/dashboard/ErrorState';
@@ -228,10 +228,17 @@ export default function CustomerRentalDetailPage() {
                 <InfoRow label="Penalty / Late Fees" value={formatCurrency(order.invoice.penaltyAmount)} />
               )}
               <InfoRow label="Invoice Status" value={order.invoice.invoiceStatus} />
-              <div className="border-t border-border mt-3 pt-3 flex justify-between items-center">
+              <div className="border-t border-border mt-3 pt-3 flex justify-between items-center mb-3">
                 <span className="text-sm font-bold text-primary">Total Amount</span>
                 <span className="text-base font-bold text-accent">{formatCurrency(order.invoice.totalAmount)}</span>
               </div>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-white py-2 text-xs font-semibold text-primary hover:bg-slate-50 transition"
+              >
+                <Printer size={13} /> Print / Download Invoice
+              </button>
             </div>
           ) : null}
 
