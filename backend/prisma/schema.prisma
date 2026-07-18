@@ -15,363 +15,305 @@ enum Role {
   CUSTOMER
 }
 
-enum UserStatus {
-  ACTIVE
-  INACTIVE
-  BLOCKED
+enum Gender {
+  Male
+  Female
+  Other
 }
 
-enum VehicleAvailability {
-  AVAILABLE
-  BOOKED
-  UNDER_MAINTENANCE
-  OUT_OF_SERVICE
+enum AccountStatus {
+  Active
+  Inactive
+  Blocked
 }
 
-enum RentalOrderStatus {
-  PENDING
-  CONFIRMED
-  ACTIVE
-  COMPLETED
-  CANCELLED
-  LATE
+enum VehicleType {
+  Two_Wheeler
+  Four_Wheeler
+}
+
+enum VehicleStatus {
+  Available
+  Reserved
+  Rented
+  Maintenance
+}
+
+enum FuelType {
+  Petrol
+  Diesel
+  Electric
+  Hybrid
+  CNG
+}
+
+enum TransmissionType {
+  Manual
+  Automatic
+}
+
+enum PickupType {
+  Store_Pickup
+  Home_Delivery
+}
+
+enum RentalUnit {
+  Hour
+  Day
+  Week
+  Month
+}
+
+enum ReturnCondition {
+  Good
+  Damaged
+}
+
+enum OrderStatus {
+  Pending
+  Confirmed
+  Ready_for_Pickup
+  Picked_Up
+  Active
+  Return_Pending
+  Returned
+  Inspection
+  Refund_Pending
+  Completed
+  Cancelled
 }
 
 enum PaymentMethod {
-  CARD
+  Cash
+  Card
   UPI
-  NET_BANKING
-  CASH
+  Net_Banking
 }
 
-enum PenaltyType {
-  LATE_RETURN
-  DAMAGE
-  CLEANING
-  TRAFFIC_FINE
-  OTHER
+enum PaymentStatus {
+  Pending
+  Paid
+  Failed
+  Refunded
 }
 
-enum VehicleCondition {
-  EXCELLENT
-  GOOD
-  SCRATCH
-  DENT
-  BROKEN_PART
+enum RefundMethod {
+  Cash
+  UPI
+  Bank_Transfer
+}
+
+enum RefundStatus {
+  Pending
+  Refunded
+  Partially_Refunded
+}
+
+enum DepositStatus {
+  Held
+  Released
+}
+
+enum InvoiceStatus {
+  Paid
+  Pending
+  Cancelled
 }
 
 model User {
-  id            String     @id @default(uuid()) @db.Uuid
-  firstName     String     @map("first_name") @db.VarChar(100)
-  lastName      String     @map("last_name") @db.VarChar(100)
-  email         String     @unique @db.VarChar(255)
-  password      String     @db.VarChar(255)
-  phone         String?    @unique @db.VarChar(20)
-  profileImage  String?    @map("profile_image") @db.VarChar(255)
-  role          Role       @default(CUSTOMER)
-  status        UserStatus @default(ACTIVE)
-  emailVerified Boolean    @default(false) @map("email_verified")
-  lastLogin     DateTime?  @map("last_login")
-  createdAt     DateTime   @default(now()) @map("created_at")
-  updatedAt     DateTime   @updatedAt @map("updated_at")
+  id                  String         @id @default(uuid()) @db.Uuid
+  role                Role           @default(CUSTOMER)
+  firstName           String         @map("first_name") @db.VarChar(100)
+  lastName            String         @map("last_name") @db.VarChar(100)
+  email               String         @unique @db.VarChar(255)
+  phone               String?        @db.VarChar(20)
+  password            String         @db.VarChar(255)
+  profileImage        String?        @map("profile_image") @db.Text
+  dateOfBirth         DateTime?      @map("date_of_birth") @db.Date
+  gender              Gender?
+  drivingLicenseNo    String?        @map("driving_license_no") @db.VarChar(100)
+  drivingLicenseImage String?        @map("driving_license_image") @db.Text
+  accountStatus       AccountStatus  @default(Active) @map("account_status")
+  isVerified          Boolean        @default(false) @map("is_verified")
+  createdAt           DateTime       @default(now()) @map("created_at")
+  updatedAt           DateTime       @updatedAt @map("updated_at")
 
-  addresses     Address[]
-  rentalOrders  RentalOrder[]
-  quotations    Quotation[]
-  notifications Notification[]
+  addresses           UserAddresses[]
+  rentalOrders        RentalOrder[]
+  payments            Payment[]
+  securityDeposits    SecurityDeposit[]
+  invoices            Invoice[]
 
   @@map("users")
 }
 
-model Address {
-  id           String   @id @default(uuid()) @db.Uuid
-  userId       String   @map("user_id") @db.Uuid
-  type         String   @db.VarChar(50)
-  addressLine1 String   @map("address_line_1") @db.VarChar(255)
-  addressLine2 String?  @map("address_line_2") @db.VarChar(255)
-  city         String   @db.VarChar(100)
-  state        String   @db.VarChar(100)
-  country      String   @db.VarChar(100)
-  postalCode   String   @map("postal_code") @db.VarChar(20)
-  isDefault    Boolean  @default(false) @map("is_default")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+model UserAddresses {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  addressType String   @map("address_type") @db.VarChar(50)
+  addressLine String   @map("address_line") @db.Text
+  city        String   @db.VarChar(100)
+  state       String   @db.VarChar(100)
+  pincode     String   @db.VarChar(20)
+  country     String   @db.VarChar(100)
+  isDefault   Boolean  @default(false) @map("is_default")
+  createdAt   DateTime @default(now()) @map("created_at")
 
-  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  pickupRentalOrders RentalOrder[] @relation("PickupAddress")
-  dropRentalOrders   RentalOrder[] @relation("DropAddress")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rentalOrders RentalOrder[]
 
-  @@map("addresses")
+  @@map("user_addresses")
 }
 
 model Category {
-  id          String   @id @default(uuid()) @db.Uuid
-  name        String   @unique @db.VarChar(100)
-  description String?  @db.Text
-  status      Boolean  @default(true)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id           String      @id @default(uuid()) @db.Uuid
+  categoryName String      @unique @map("category_name") @db.VarChar(100)
+  vehicleType  VehicleType @map("vehicle_type")
+  description  String?     @db.Text
+  status       Boolean     @default(true)
+  createdAt    DateTime    @default(now()) @map("created_at")
 
-  vehicles Vehicle[]
+  vehicles     Vehicle[]
 
   @@map("categories")
 }
 
 model Vehicle {
-  id                 String              @id @default(uuid()) @db.Uuid
-  categoryId         String              @map("category_id") @db.Uuid
-  brand              String              @db.VarChar(100)
-  model              String              @db.VarChar(100)
-  variant            String?             @db.VarChar(100)
-  registrationNumber String              @unique @map("registration_number") @db.VarChar(50)
-  vin                String              @unique @db.VarChar(100)
+  id                 String         @id @default(uuid()) @db.Uuid
+  categoryId         String         @map("category_id") @db.Uuid
+  vehicleName        String         @map("vehicle_name") @db.VarChar(255)
+  brand              String         @db.VarChar(100)
+  model              String         @db.VarChar(100)
   year               Int
-  fuelType           String              @map("fuel_type") @db.VarChar(50)
-  transmission       String              @db.VarChar(50)
-  color              String              @db.VarChar(50)
-  seatCapacity       Int                 @map("seat_capacity")
-  mileage            Decimal             @db.Decimal(10, 2)
-  description        String?             @db.Text
-  basePrice          Decimal             @map("base_price") @db.Decimal(10, 2)
-  securityDeposit    Decimal             @map("security_deposit") @db.Decimal(10, 2)
-  availabilityStatus VehicleAvailability @default(AVAILABLE) @map("availability_status")
-  currentStatus      String?             @map("current_status") @db.VarChar(100)
-  thumbnail          String?             @db.VarChar(255)
-  createdAt          DateTime            @default(now()) @map("created_at")
-  updatedAt          DateTime            @updatedAt @map("updated_at")
+  registrationNumber String         @unique @map("registration_number") @db.VarChar(50)
+  color              String         @db.VarChar(50)
+  fuelType           FuelType       @map("fuel_type")
+  transmission       TransmissionType
+  seatCapacity       Int            @map("seat_capacity")
+  mileage            Decimal        @db.Decimal(10, 2)
+  engineCapacity     String?        @map("engine_capacity") @db.VarChar(100)
+  currentOdometer    Int            @default(0) @map("current_odometer")
+  rentPerHour        Decimal        @map("rent_per_hour") @db.Decimal(10, 2)
+  rentPerDay         Decimal        @map("rent_per_day") @db.Decimal(10, 2)
+  rentPerWeek        Decimal        @map("rent_per_week") @db.Decimal(10, 2)
+  rentPerMonth       Decimal        @map("rent_per_month") @db.Decimal(10, 2)
+  securityDeposit    Decimal        @map("security_deposit") @db.Decimal(10, 2)
+  description        String?        @db.Text
+  averageRating      Decimal        @default(0.0) @map("average_rating") @db.Decimal(3, 2)
+  totalRentals       Int            @default(0) @map("total_rentals")
+  lastServiceDate    DateTime?      @map("last_service_date") @db.Date
+  status             VehicleStatus  @default(Available)
+  createdAt          DateTime       @default(now()) @map("created_at")
 
-  category    Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  images      VehicleImage[]
-  priceLists  PriceList[]
-  rentalItems RentalItem[]
+  category           Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  images             VehicleImage[]
+  rentalOrders       RentalOrder[]
 
-  @@index([registrationNumber])
-  @@index([availabilityStatus])
   @@map("vehicles")
 }
 
 model VehicleImage {
-  id           String  @id @default(uuid()) @db.Uuid
-  vehicleId    String  @map("vehicle_id") @db.Uuid
-  imageUrl     String  @map("image_url") @db.VarChar(255)
-  isPrimary    Boolean @default(false) @map("is_primary")
-  displayOrder Int     @default(0) @map("display_order")
+  id           String   @id @default(uuid()) @db.Uuid
+  vehicleId    String   @map("vehicle_id") @db.Uuid
+  imageUrl     String   @map("image_url") @db.Text
+  isPrimary    Boolean  @default(false) @map("is_primary")
+  displayOrder Int      @default(0) @map("display_order")
 
-  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  vehicle      Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
   @@map("vehicle_images")
 }
 
-model PriceList {
-  id          String    @id @default(uuid()) @db.Uuid
-  vehicleId   String    @map("vehicle_id") @db.Uuid
-  pricingType String    @map("pricing_type") @db.VarChar(50)
-  price       Decimal   @db.Decimal(10, 2)
-  validFrom   DateTime? @map("valid_from") @db.Date
-  validTo     DateTime? @map("valid_to") @db.Date
-
-  vehicle     Vehicle      @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-  rentalItems RentalItem[]
-
-  @@map("price_lists")
-}
-
-model RentalPeriod {
-  id          String  @id @default(uuid()) @db.Uuid
-  name        String  @db.VarChar(50)
-  days        Int
-  description String? @db.Text
-  status      Boolean @default(true)
-
-  rentalOrders RentalOrder[]
-
-  @@map("rental_periods")
-}
-
 model RentalOrder {
-  id                 String            @id @default(uuid()) @db.Uuid
-  bookingNumber      String            @unique @map("booking_number") @db.VarChar(100)
-  customerId         String            @map("customer_id") @db.Uuid
-  pickupAddressId    String?           @map("pickup_address_id") @db.Uuid
-  dropAddressId      String?           @map("drop_address_id") @db.Uuid
-  rentalPeriodId     String            @map("rental_period_id") @db.Uuid
-  pickupDate         DateTime          @map("pickup_date")
-  expectedReturnDate DateTime          @map("expected_return_date")
-  actualReturnDate   DateTime?         @map("actual_return_date")
-  status             RentalOrderStatus @default(PENDING)
-  subtotal           Decimal           @db.Decimal(10, 2)
-  securityDeposit    Decimal           @map("security_deposit") @db.Decimal(10, 2)
-  tax                Decimal           @default(0) @db.Decimal(10, 2)
-  discount           Decimal           @default(0) @db.Decimal(10, 2)
-  lateFee            Decimal           @default(0) @map("late_fee") @db.Decimal(10, 2)
-  grandTotal         Decimal           @map("grand_total") @db.Decimal(10, 2)
-  invoiceNumber      String?           @unique @map("invoice_number") @db.VarChar(100)
-  paymentStatus      String            @default("PENDING") @map("payment_status") @db.VarChar(50)
-  remarks            String?           @db.Text
-  createdAt          DateTime          @default(now()) @map("created_at")
-  updatedAt          DateTime          @updatedAt @map("updated_at")
+  id                 String             @id @default(uuid()) @db.Uuid
+  orderNumber        String             @unique @map("order_number") @db.VarChar(100)
+  customerId         String             @map("customer_id") @db.Uuid
+  vehicleId          String             @map("vehicle_id") @db.Uuid
+  pickupType         PickupType         @map("pickup_type")
+  deliveryAddressId  String?            @map("delivery_address_id") @db.Uuid
+  pickupDate         DateTime           @map("pickup_date")
+  pickupOtp          String?            @map("pickup_otp") @db.VarChar(20)
+  pickupStatus       Boolean            @default(false) @map("pickup_status")
+  expectedReturnDate DateTime           @map("expected_return_date")
+  actualReturnDate   DateTime?          @map("actual_return_date")
+  rentalUnit         RentalUnit         @map("rental_unit")
+  rentalDuration     Int                @map("rental_duration")
+  rentalAmount       Decimal            @map("rental_amount") @db.Decimal(10, 2)
+  returnCondition    ReturnCondition?   @map("return_condition")
+  returnRemarks      String?            @map("return_remarks") @db.Text
+  orderStatus        OrderStatus        @default(Pending) @map("order_status")
+  remarks            String?            @db.Text
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
 
-  customer      User         @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  pickupAddress Address?     @relation("PickupAddress", fields: [pickupAddressId], references: [id], onDelete: SetNull)
-  dropAddress   Address?     @relation("DropAddress", fields: [dropAddressId], references: [id], onDelete: SetNull)
-  rentalPeriod  RentalPeriod @relation(fields: [rentalPeriodId], references: [id], onDelete: Restrict)
+  customer           User               @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  vehicle            Vehicle            @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  deliveryAddress    UserAddresses?     @relation(fields: [deliveryAddressId], references: [id], onDelete: SetNull)
+  payment            Payment?
+  securityDeposit    SecurityDeposit?
+  invoice            Invoice?
 
-  rentalItems      RentalItem[]
-  payments         Payment[]
-  securityDeposits SecurityDeposit[]
-  penalties        Penalty[]
-  pickup           Pickup?
-  return           Return?
-
-  @@index([bookingNumber])
-  @@index([invoiceNumber])
-  @@index([pickupDate, expectedReturnDate])
-  @@index([status])
   @@map("rental_orders")
 }
 
-model RentalItem {
-  id            String  @id @default(uuid()) @db.Uuid
-  rentalOrderId String  @map("rental_order_id") @db.Uuid
-  vehicleId     String  @map("vehicle_id") @db.Uuid
-  priceListId   String? @map("price_list_id") @db.Uuid
-  quantity      Int     @default(1)
-  unitPrice     Decimal @map("unit_price") @db.Decimal(10, 2)
-  subtotal      Decimal @db.Decimal(10, 2)
-
-  rentalOrder RentalOrder @relation(fields: [rentalOrderId], references: [id], onDelete: Cascade)
-  vehicle     Vehicle     @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
-  priceList   PriceList?  @relation(fields: [priceListId], references: [id], onDelete: Restrict)
-
-  @@map("rental_items")
-}
-
 model Payment {
-  id             String        @id @default(uuid()) @db.Uuid
-  rentalOrderId  String        @map("rental_order_id") @db.Uuid
-  transactionId  String?       @unique @map("transaction_id") @db.VarChar(255)
-  paymentMethod  PaymentMethod @map("payment_method")
-  paymentGateway String?       @map("payment_gateway") @db.VarChar(100)
-  amount         Decimal       @db.Decimal(10, 2)
-  currency       String        @default("INR") @db.VarChar(10)
-  paymentStatus  String        @default("SUCCESS") @map("payment_status") @db.VarChar(50)
-  paidAt         DateTime      @default(now()) @map("paid_at")
+  id            String        @id @default(uuid()) @db.Uuid
+  orderId       String        @unique @map("order_id") @db.Uuid
+  customerId    String        @map("customer_id") @db.Uuid
+  rentalAmount  Decimal       @map("rental_amount") @db.Decimal(10, 2)
+  taxAmount     Decimal       @map("tax_amount") @db.Decimal(10, 2)
+  totalAmount   Decimal       @map("total_amount") @db.Decimal(10, 2)
+  paymentMethod PaymentMethod @map("payment_method")
+  transactionId String?       @unique @map("transaction_id") @db.VarChar(255)
+  paymentStatus PaymentStatus @default(Pending) @map("payment_status")
+  paymentDate   DateTime?     @map("payment_date")
+  createdAt     DateTime      @default(now()) @map("created_at")
 
-  rentalOrder RentalOrder @relation(fields: [rentalOrderId], references: [id], onDelete: Cascade)
+  order         RentalOrder   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customer      User          @relation(fields: [customerId], references: [id], onDelete: Restrict)
 
   @@map("payments")
 }
 
 model SecurityDeposit {
-  id              String    @id @default(uuid()) @db.Uuid
-  rentalOrderId   String    @map("rental_order_id") @db.Uuid
-  amountCollected Decimal   @map("amount_collected") @db.Decimal(10, 2)
-  amountRefunded  Decimal   @default(0) @map("amount_refunded") @db.Decimal(10, 2)
-  refundStatus    String    @default("PENDING") @map("refund_status") @db.VarChar(50)
-  damageCost      Decimal   @default(0) @map("damage_cost") @db.Decimal(10, 2)
-  reason          String?   @db.Text
-  refundedAt      DateTime? @map("refunded_at")
+  id            String        @id @default(uuid()) @db.Uuid
+  orderId       String        @unique @map("order_id") @db.Uuid
+  customerId    String        @map("customer_id") @db.Uuid
+  depositAmount Decimal       @map("deposit_amount") @db.Decimal(10, 2)
+  penaltyAmount Decimal       @default(0) @map("penalty_amount") @db.Decimal(10, 2)
+  penaltyReason String?       @map("penalty_reason") @db.Text
+  refundAmount  Decimal       @default(0) @map("refund_amount") @db.Decimal(10, 2)
+  refundMethod  RefundMethod? @map("refund_method")
+  refundStatus  RefundStatus  @default(Pending) @map("refund_status")
+  depositStatus DepositStatus @default(Held) @map("deposit_status")
+  refundDate    DateTime?     @map("refund_date")
+  remarks       String?       @db.Text
+  createdAt     DateTime      @default(now()) @map("created_at")
 
-  rentalOrder RentalOrder @relation(fields: [rentalOrderId], references: [id], onDelete: Cascade)
+  order         RentalOrder   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customer      User          @relation(fields: [customerId], references: [id], onDelete: Restrict)
 
   @@map("security_deposits")
 }
 
-model Penalty {
-  id            String      @id @default(uuid()) @db.Uuid
-  rentalOrderId String      @map("rental_order_id") @db.Uuid
-  type          PenaltyType
-  reason        String      @db.Text
-  amount        Decimal     @db.Decimal(10, 2)
-  status        String      @default("UNPAID") @db.VarChar(50)
+model Invoice {
+  id            String        @id @default(uuid()) @db.Uuid
+  invoiceNumber String        @unique @map("invoice_number") @db.VarChar(100)
+  orderId       String        @unique @map("order_id") @db.Uuid
+  customerId    String        @map("customer_id") @db.Uuid
+  paymentId     String?       @map("payment_id") @db.Uuid
+  issueDate     DateTime      @default(now()) @map("issue_date")
+  rentalAmount  Decimal       @map("rental_amount") @db.Decimal(10, 2)
+  taxAmount     Decimal       @map("tax_amount") @db.Decimal(10, 2)
+  depositAmount Decimal       @map("deposit_amount") @db.Decimal(10, 2)
+  penaltyAmount Decimal       @map("penalty_amount") @db.Decimal(10, 2)
+  totalAmount   Decimal       @map("total_amount") @db.Decimal(10, 2)
+  invoiceStatus InvoiceStatus @default(Pending) @map("invoice_status")
+  pdfUrl        String?       @map("pdf_url") @db.Text
+  createdAt     DateTime      @default(now()) @map("created_at")
 
-  rentalOrder RentalOrder @relation(fields: [rentalOrderId], references: [id], onDelete: Cascade)
+  order         RentalOrder   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customer      User          @relation(fields: [customerId], references: [id], onDelete: Restrict)
 
-  @@map("penalties")
-}
-
-model Pickup {
-  id               String   @id @default(uuid()) @db.Uuid
-  rentalOrderId    String   @unique @map("rental_order_id") @db.Uuid
-  executiveName    String   @map("executive_name") @db.VarChar(100)
-  pickupTime       DateTime @map("pickup_time")
-  odometerReading  Int      @map("odometer_reading")
-  fuelLevel        String   @map("fuel_level") @db.VarChar(50)
-  customerVerified Boolean  @default(false) @map("customer_verified")
-  remarks          String?  @db.Text
-
-  rentalOrder RentalOrder @relation(fields: [rentalOrderId], references: [id], onDelete: Cascade)
-
-  @@map("pickups")
-}
-
-model Return {
-  id               String           @id @default(uuid()) @db.Uuid
-  rentalOrderId    String           @unique @map("rental_order_id") @db.Uuid
-  executiveName    String           @map("executive_name") @db.VarChar(100)
-  returnTime       DateTime         @map("return_time")
-  odometerReading  Int              @map("odometer_reading")
-  fuelLevel        String           @map("fuel_level") @db.VarChar(50)
-  vehicleCondition VehicleCondition @map("vehicle_condition")
-  damageCharge     Decimal          @default(0) @map("damage_charge") @db.Decimal(10, 2)
-  lateCharge       Decimal          @default(0) @map("late_charge") @db.Decimal(10, 2)
-  remarks          String?          @db.Text
-
-  rentalOrder RentalOrder @relation(fields: [rentalOrderId], references: [id], onDelete: Cascade)
-
-  @@map("returns")
-}
-
-model Quotation {
-  id              String   @id @default(uuid()) @db.Uuid
-  quotationNumber String   @unique @map("quotation_number") @db.VarChar(100)
-  customerId      String   @map("customer_id") @db.Uuid
-  expiryDate      DateTime @map("expiry_date")
-  subtotal        Decimal  @db.Decimal(10, 2)
-  tax             Decimal  @default(0) @db.Decimal(10, 2)
-  discount        Decimal  @default(0) @db.Decimal(10, 2)
-  grandTotal      Decimal  @map("grand_total") @db.Decimal(10, 2)
-  status          String   @default("DRAFT") @db.VarChar(50)
-  notes           String?  @db.Text
-  createdAt       DateTime @default(now()) @map("created_at")
-
-  customer User @relation(fields: [customerId], references: [id], onDelete: Cascade)
-
-  @@index([quotationNumber])
-  @@map("quotations")
-}
-
-model OrganizationSetting {
-  id              Int      @id @default(1)
-  companyName     String   @map("company_name") @db.VarChar(255)
-  companyEmail    String   @map("company_email") @db.VarChar(255)
-  companyPhone    String   @map("company_phone") @db.VarChar(50)
-  companyAddress  String   @map("company_address") @db.Text
-  gstNumber       String?  @map("gst_number") @db.VarChar(50)
-  currency        String   @default("INR") @db.VarChar(10)
-  taxPercentage   Decimal  @default(0) @map("tax_percentage") @db.Decimal(5, 2)
-  depositRule     String?  @map("deposit_rule") @db.Text
-  graceHours      Int      @default(0) @map("grace_hours")
-  lateFeePerHour  Decimal  @default(0) @map("late_fee_per_hour") @db.Decimal(10, 2)
-  lateFeePerDay   Decimal  @default(0) @map("late_fee_per_day") @db.Decimal(10, 2)
-  maximumLateFee  Decimal? @map("maximum_late_fee") @db.Decimal(10, 2)
-  quotationHeader String?  @map("quotation_header") @db.Text
-  quotationFooter String?  @map("quotation_footer") @db.Text
-  invoicePrefix   String   @default("INV-") @map("invoice_prefix") @db.VarChar(20)
-
-  @@map("organization_settings")
-}
-
-model Notification {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  title     String   @db.VarChar(255)
-  message   String   @db.Text
-  type      String?  @db.VarChar(50)
-  isRead    Boolean  @default(false) @map("is_read")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("notifications")
+  @@map("invoices")
 }
