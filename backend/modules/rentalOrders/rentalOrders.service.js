@@ -16,6 +16,15 @@ class RentalOrderService {
     if (!vehicle) throw new ApiError(404, 'Vehicle not found');
     if (vehicle.status !== 'Available') throw new ApiError(400, 'Vehicle is not available for booking');
 
+    if (data.transactionId) {
+      const existingPayment = await prisma.payment.findUnique({
+        where: { transactionId: data.transactionId }
+      });
+      if (existingPayment) {
+        throw new ApiError(400, 'This transaction ID has already been used. Please use a unique payment transaction reference.');
+      }
+    }
+
     // Generate random 4-digit pickup OTP
     // const pickupOtp = Math.floor(1000 + Math.random() * 9000).toString();
     const pickupOtp = "1234";
