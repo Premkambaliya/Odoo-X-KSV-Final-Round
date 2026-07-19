@@ -66,8 +66,8 @@ app.use(
   })
 );
 app.use(morgan('dev'));
-app.use(express.json({ limit: '10kb' })); // Request size limits
-app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(express.json({ limit: '15mb' })); // Request size limits for Base64 document uploads
+app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 app.use(cookieParser());
 
 // Rate Limiting (Disabled for development as requested previously)
