@@ -44,6 +44,7 @@ export default function RentalOrderDetailPage() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState(null);
+  const [activeTab, setActiveTab] = useState('rental');
 
   // Verification & Return form states
   const [otpInput, setOtpInput] = useState('');
@@ -234,8 +235,28 @@ export default function RentalOrderDetailPage() {
     >
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="space-y-6">
-          {/* Main Booking Overview */}
-          <InfoCard title="Booking Overview">
+          {/* Tab Switcher */}
+          <div className="flex gap-4 border-b border-border pb-2 mb-4">
+            <button
+              onClick={() => setActiveTab('rental')}
+              className={`pb-2 px-2 text-sm font-semibold border-b-2 transition
+                ${activeTab === 'rental' ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-primary'}`}
+            >
+              🚗 Vehicle & Booking Info
+            </button>
+            <button
+              onClick={() => setActiveTab('customer')}
+              className={`pb-2 px-2 text-sm font-semibold border-b-2 transition
+                ${activeTab === 'customer' ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-primary'}`}
+            >
+              👤 Customer Verification
+            </button>
+          </div>
+
+          {activeTab === 'rental' ? (
+            <>
+              {/* Main Booking Overview */}
+              <InfoCard title="Booking Overview">
             <dl>
               <InfoRow label="Order Status" value={<StatusBadge status={order.orderStatus} />} />
               <InfoRow
@@ -388,6 +409,48 @@ export default function RentalOrderDetailPage() {
               {order.remarks || 'No remarks provided.'}
             </p>
           </InfoCard>
+          </>
+          ) : (
+            <div className="space-y-6">
+              {/* Customer Verification Details Card */}
+              <InfoCard title="Customer Profile & Verification">
+                <dl className="mb-4">
+                  <InfoRow label="Full Name" value={customerName(order.customer)} />
+                  <InfoRow label="Email Address" value={order.customer?.email || '—'} />
+                  <InfoRow label="Phone Number" value={order.customer?.phone || '—'} />
+                  <InfoRow label="Verification Status" value={
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${order.customer?.isVerified ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {order.customer?.isVerified ? 'Verified Profile' : 'Pending Verification'}
+                    </span>
+                  } />
+                </dl>
+
+                <div className="border-t border-border pt-4">
+                  <h4 className="text-xs font-bold text-primary uppercase mb-3">Driving License Details</h4>
+                  <dl className="mb-4">
+                    <InfoRow label="License Number" value={order.customer?.drivingLicenseNo || <span className="text-danger font-medium">Not provided</span>} />
+                  </dl>
+
+                  {order.customer?.drivingLicenseImage ? (
+                    <div className="space-y-2">
+                      <span className="text-xs font-semibold text-secondary">Driving License Copy:</span>
+                      <div className="relative h-64 w-full overflow-hidden rounded-xl border border-border bg-slate-50">
+                        <img
+                          src={order.customer.drivingLicenseImage}
+                          alt="Driving License Copy"
+                          className="h-full w-full object-contain"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-border p-4 text-center text-xs text-rose-500 bg-rose-50/30">
+                      ⚠️ No driving license copy image uploaded by user.
+                    </div>
+                  )}
+                </div>
+              </InfoCard>
+            </div>
+          )}
         </div>
 
         <div className="space-y-6">

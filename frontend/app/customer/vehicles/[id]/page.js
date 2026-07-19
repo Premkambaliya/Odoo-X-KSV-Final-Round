@@ -14,6 +14,7 @@ import { APP_ROUTES } from '@/constants/routes';
 import vehicleService from '@/services/vehicleService';
 import rentalService from '@/services/rentalService';
 import favouriteService from '@/services/favouriteService';
+import userService from '@/services/userService';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { getErrorMessage } from '@/lib/apiResponse';
 import notify from '@/lib/toast';
@@ -75,6 +76,8 @@ export default function CustomerVehicleDetailPage() {
   const [isFav, setIsFav] = useState(false);
   const [activeImage, setActiveImage] = useState(0);
 
+  const [userProfile, setUserProfile] = useState(null);
+
   // Booking form state
   const [pickupDate, setPickupDate] = useState('');       // YYYY-MM-DD
   const [returnDate, setReturnDate] = useState('');       // YYYY-MM-DD
@@ -89,8 +92,14 @@ export default function CustomerVehicleDetailPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await vehicleService.getVehicleById(id);
-      setVehicle(res.data);
+      const [vehicleRes, profileRes] = await Promise.all([
+        vehicleService.getVehicleById(id),
+        userService.getProfile().catch(() => null)
+      ]);
+      setVehicle(vehicleRes.data);
+      if (profileRes) {
+        setUserProfile(profileRes.data);
+      }
       setIsFav(favouriteService.isFavourite(id));
 
       // Default: pickup tomorrow, return day after
@@ -319,11 +328,27 @@ export default function CustomerVehicleDetailPage() {
 
           {/* Booking Form */}
           {vehicle.status === 'Available' ? (
-            <div className="surface-card p-5">
-              <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-primary">
-                <CalendarRange size={16} className="text-accent" />
-                Book this Vehicle
-              </h2>
+            userProfile && (!userProfile.drivingLicenseNo || !userProfile.drivingLicenseImage) ? (
+              <div className="surface-card p-5 border-l-4 border-amber-500 bg-amber-50/30">
+                <h2 className="mb-2 flex items-center gap-2 text-sm font-bold text-amber-700">
+                  ⚠️ Verification Required
+                </h2>
+                <p className="text-xs text-secondary leading-relaxed mb-4">
+                  To book this vehicle, you must first complete your profile verification by providing a valid Driving License copy.
+                </p>
+                <Link
+                  href={APP_ROUTES.CUSTOMER.PROFILE}
+                  className="inline-flex w-full justify-center items-center rounded-xl bg-accent py-2.5 text-xs font-bold text-white transition hover:bg-accent/90 active:scale-95"
+                >
+                  Verify Profile Now
+                </Link>
+              </div>
+            ) : (
+              <div className="surface-card p-5">
+                <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-primary">
+                  <CalendarRange size={16} className="text-accent" />
+                  Book this Vehicle
+                </h2>
 
               {/* From date */}
               <div className="mb-4">
@@ -524,6 +549,7 @@ export default function CustomerVehicleDetailPage() {
                 Confirm Booking
               </button>
             </div>
+            )
           ) : (
             <div className="surface-card p-5 text-center">
               <Car size={32} className="mx-auto mb-2 text-muted/40" />

@@ -28,7 +28,13 @@ export default function CustomerProfilePage() {
   const [activeTab, setActiveTab] = useState('profile');
 
   // Profile form
-  const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', drivingLicense: '' });
+  const [form, setForm] = useState({
+    firstName: '',
+    lastName: '',
+    phone: '',
+    drivingLicenseNo: '',
+    drivingLicenseImage: '',
+  });
 
   // Password form
   const [passForm, setPassForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -43,7 +49,8 @@ export default function CustomerProfilePage() {
         firstName: u.firstName || '',
         lastName: u.lastName || '',
         phone: u.phone || '',
-        drivingLicense: u.drivingLicense || '',
+        drivingLicenseNo: u.drivingLicenseNo || '',
+        drivingLicenseImage: u.drivingLicenseImage || '',
       });
     } catch (err) {
       notify.error(getErrorMessage(err));
@@ -53,6 +60,20 @@ export default function CustomerProfilePage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      notify.error('File size must be less than 2MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setForm((prev) => ({ ...prev, drivingLicenseImage: reader.result }));
+    };
+    reader.readAsDataURL(file);
+  };
 
   async function handleSaveProfile(e) {
     e.preventDefault();
@@ -170,11 +191,34 @@ export default function CustomerProfilePage() {
             <FieldGroup label="Driving License No.">
               <input
                 type="text"
-                value={form.drivingLicense}
-                onChange={(e) => setForm((f) => ({ ...f, drivingLicense: e.target.value }))}
+                value={form.drivingLicenseNo}
+                onChange={(e) => setForm((f) => ({ ...f, drivingLicenseNo: e.target.value }))}
                 className="input-field w-full"
                 placeholder="e.g. GJ01-20251234567"
               />
+            </FieldGroup>
+            <FieldGroup label="Driving License Copy (Image)">
+              <div className="space-y-3">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-accent/10 file:text-accent hover:file:bg-accent/20 cursor-pointer"
+                />
+                {form.drivingLicenseImage ? (
+                  <div className="relative mt-2 h-40 w-full overflow-hidden rounded-xl border border-border bg-slate-50">
+                    <img
+                      src={form.drivingLicenseImage}
+                      alt="Driving License Copy"
+                      className="h-full w-full object-contain"
+                    />
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-border p-4 text-center text-xs text-muted">
+                    No image uploaded yet.
+                  </div>
+                )}
+              </div>
             </FieldGroup>
             <div className="pt-2">
               <button
