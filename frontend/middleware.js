@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { ROLES } from '@/constants/roles';
+import { ROLES } from './constants/roles';
 import {
   APP_ROUTES,
   AUTH_COOKIE,
   ROLE_COOKIE,
   PROTECTED_PREFIXES,
-} from '@/constants/routes';
+} from './constants/routes';
 
 function isProtectedPath(pathname) {
   return PROTECTED_PREFIXES.some(
