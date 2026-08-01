@@ -1,4 +1,4 @@
-import { APP_ROUTES } from '@/constants/routes';
+import { APP_ROUTES } from './routes';
 
 export const ROLES = Object.freeze({
   ADMIN: 'ADMIN',
