@@ -1,6 +1,6 @@
 /**
  * Central registry of backend API endpoints.
- * Base URL is provided by NEXT_PUBLIC_API_URL (e.g. http://localhost:5000/api).
+ * Base URL is provided by NEXT_PUBLIC_API_URL (e.g. https://rental-management-backend-w1qf.onrender.com/api).
  */
 export const API_ROUTES = Object.freeze({
   HEALTH: '/health',
