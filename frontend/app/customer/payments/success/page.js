@@ -44,10 +44,10 @@ export default function PaymentSuccessPage() {
   const rentalAmount = Number(payment?.rentalAmount || order?.rentalAmount || 0);
   const taxAmount = Number(payment?.taxAmount || 0);
   const depositAmount = Number(deposit?.depositAmount || 0);
-  const totalPaid = Number(payment?.totalAmount || 0);
+  const totalPaid = Number(payment?.totalAmount || 0) + depositAmount;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-emerald-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-emerald-50 via-white to-emerald-50 p-4">
       <div className="w-full max-w-md text-center">
         {/* Success Icon */}
         <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-emerald-100 shadow-lg shadow-emerald-200/50">
