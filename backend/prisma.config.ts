@@ -13,7 +13,7 @@ export default defineConfig({
   },
   engine: 'classic',
   datasource: {
-    // Prefer direct (non-pooler) URL for CLI when available
-    url: process.env.DIRECT_URL || env('DATABASE_URL'),
+    // Prefer DATABASE_URL for CLI connection
+    url: process.env.DATABASE_URL || env('DATABASE_URL'),
   },
 });
