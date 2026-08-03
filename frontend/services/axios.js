@@ -15,10 +15,15 @@ import notify from '@/lib/toast';
 
 const MUTATING = new Set(['post', 'put', 'patch', 'delete']);
 
+const defaultBaseUrl =
+  process.env.NODE_ENV === 'production'
+    ? 'https://rental-management-backend-w1qf.onrender.com/api'
+    : 'http://localhost:5000/api';
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: process.env.NEXT_PUBLIC_API_URL || defaultBaseUrl,
   withCredentials: true,
-  timeout: 25000,
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
   },

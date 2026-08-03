@@ -31,8 +31,12 @@ export function getErrorMessage(error, fallback = 'Something went wrong') {
 
   if (apiMessage) return apiMessage;
 
+  if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+    return 'Server request timed out. If the backend is hosted on a free tier (e.g., Render), it may be waking up. Please wait a moment and try again.';
+  }
+
   if (error.message === 'Network Error') {
-    return 'Network error. Please check your connection and try again.';
+    return 'Network error. Please check your internet connection, backend deployment URL, and CORS settings.';
   }
 
   return error.message || fallback;

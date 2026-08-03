@@ -48,19 +48,47 @@ app.use(helmet());
 app.use(compression());
 
 // Browsers reject Access-Control-Allow-Origin: * when credentials are included.
+// Strip trailing slashes from allowed origins
 const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:3000')
   .split(',')
-  .map((origin) => origin.trim())
+  .map((origin) => origin.trim().replace(/\/$/, ''))
   .filter(Boolean);
 
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error(`Not allowed by CORS: ${origin}`));
+      // Allow requests with no origin (like mobile apps, curl, server-to-server)
+      if (!origin) {
+        return callback(null, true);
       }
+
+      const normalizedOrigin = origin.replace(/\/$/, '');
+
+      // If CLIENT_URL is '*' or contains '*', reflect the requesting origin dynamically
+      if (allowedOrigins.includes('*')) {
+        return callback(null, true);
+      }
+
+      // Allow Vercel, Netlify, and Render deployment origins automatically
+      if (
+        /\.vercel\.app$/.test(normalizedOrigin) ||
+        /\.netlify\.app$/.test(normalizedOrigin) ||
+        /\.onrender\.com$/.test(normalizedOrigin)
+      ) {
+        return callback(null, true);
+      }
+
+      // Check exact match after stripping trailing slashes
+      if (allowedOrigins.includes(normalizedOrigin)) {
+        return callback(null, true);
+      }
+
+      // Allow localhost origins during development
+      if (process.env.NODE_ENV !== 'production' && /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(normalizedOrigin)) {
+        return callback(null, true);
+      }
+
+      callback(null, false);
     },
     credentials: true,
   })
